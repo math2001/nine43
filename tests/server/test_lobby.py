@@ -5,30 +5,35 @@ in a <Player> poping out on the server side.
 """
 
 import string
+import pytest
 import trio
 import trio.testing
 import net
 from t import *
 import server.lobby
 
-
 def new_stream_pair() -> Tuple[net.JSONStream, net.JSONStream]:
     left, right = trio.testing.memory_stream_pair()
     return net.JSONStream(left), net.JSONStream(right)
 
-async def test_lobby_groups():
+async def test_lobby_groups() -> None:
 
     group_size = 3
-    player_number = 6
+    player_number = 7
 
-    conn_sendch, conn_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel, trio.abc.ReceiveChannel
+    
+    conn_sendch, conn_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel[net.Stream], trio.abc.ReceiveChannel[net.Stream]
     group_sendch, group_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel, trio.abc.ReceiveChannel
 
     groups: List[List[server.lobby.Player]] = []
     group: List[server.lobby.Player] = []
+    
+    # streams that will still be waiting in the lobby (because they aren't
+    # enough). This happens when player_number % group_size != 0
 
+    extra_client_streams: List[net.JSONStream] = []
 
-    with trio.move_on_after(2) as out:
+    with trio.move_on_after(3) as out:
             
         async with trio.open_nursery() as nursery:
 
@@ -37,6 +42,9 @@ async def test_lobby_groups():
             for i in range(player_number):
 
                 left, right = new_stream_pair()
+                if i >= player_number - (player_number % group_size):
+                    extra_client_streams.append(left)
+
                 await left.write({"type": "log in", "username": string.ascii_letters[i]})
 
                 group.append(server.lobby.Player(right, string.ascii_letters[i]))
@@ -58,8 +66,15 @@ async def test_lobby_groups():
 
     assert out.cancelled_caught is False,\
             "Awaiting nursery (probably lobby) took too long"
-    # some players are left in the lobby if player_number % group_size != 0
 
-    # we could check what happens when we close conn_sendch, ie. we close the
-    # server (lobby should close as well), but who cares? When the server goes
-    # down, everything goes down.
+    with trio.move_on_after(2) as cancel_scope:
+        for stream in extra_client_streams:
+            with pytest.raises(net.ConnectionClosed):
+                await stream.read()
+
+    assert cancel_scope.cancelled_caught is False, \
+            "extra client streams should have been closed by the lobby " \
+            "(took too long to raise error trying to read it)"
+
+    # Note that the other connection that the lobby has *given* to the server
+    # should still be open.

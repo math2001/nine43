@@ -1,13 +1,14 @@
-from trio import *
+import trio
+from t import *
 
-async def read(chan):
+async def read(chan: trio.abc.ReceiveChannel[str]) -> None:
     async for item in chan:
         print(item)
     print("chan closed?")
 
-async def main():
-    send, get = open_memory_channel(0) # type: abc.SendChannel, abc.ReceiveChannel
-    async with open_nursery() as nursery:
+async def main() -> None:
+    send, get = trio.open_memory_channel[str](0)
+    async with trio.open_nursery() as nursery:
         nursery.start_soon(read, get)
         await send.send("Hello")
         await send.send("World")
@@ -15,4 +16,4 @@ async def main():
         await send.aclose()
     print("Should be done")
 
-run(main)
+trio.run(main)

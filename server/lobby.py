@@ -48,7 +48,8 @@ async def initiate_players(
             async for stream in connch:
                 log.debug("new stream in conn ch")
                 nursery.start_soon(initiate_player, stream, playerch)
-            log.info("conn channel closed")
+            log.info("conn channel closed, with %d tasks left",
+                     len(nursery.child_tasks))
 
             if len(nursery.child_tasks) > 0:
                 log.info("waiting for initialization to be finished")
@@ -76,6 +77,11 @@ async def group_players(
                 await groupch.send(stack.copy())
                 stack.clear()
 
+    # close the connections with the players still in the lobby
+    async with trio.open_nursery() as nursery:
+        for player in stack:
+            nursery.start_soon(player.stream.aclose)
+
 def new_lobby(
         nursery: Nursery,
         connch: trio.abc.ReceiveChannel,
@@ -88,8 +94,17 @@ def new_lobby(
     Only once instance of the lobby will be running at any time (always the
     same one).
 
-    In essence, it stacks players and sends them in group of N back to the
-    server.
+    In essence, it recieves connections from the server, stacks them and sends
+    them in group of N back to the server.
+
+    Path of a player from the server back to the server:
+
+    Server -> initiate_players -> group_players -> Server
+         connch             playerch         groupch
+
+    Remember: when you send something through a channel, you *give up its
+              ownership*.
+
     """
 
     log.info("start lobby")
