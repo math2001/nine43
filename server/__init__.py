@@ -10,6 +10,7 @@ import server.sub as sub
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+PORT = 9999
 SLEEP_TIME = 0.1
 GROUP_SIZE = 2
 
@@ -71,5 +72,6 @@ async def server(port: int, nursery: Nursery) -> None:
     nursery.start_soon(start_subs, group_getch)
 
 async def run() -> None:
+    log.debug("starting server on port %d", PORT)
     async with trio.open_nursery() as nursery:
-        server(9999, nursery)
+        await server(PORT, nursery)

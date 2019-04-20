@@ -26,7 +26,7 @@ async def initiate_player(
         playerch: trio.abc.SendChannel[Player]
     ) -> None:
 
-    log.info("initiating player %s", stream)
+    log.debug("initiating player %s", stream)
 
     try:
         msg = await stream.read()
