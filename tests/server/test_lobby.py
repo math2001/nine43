@@ -11,10 +11,7 @@ import trio.testing
 import net
 from typings import *
 import server.lobby as lobby
-
-def new_stream_pair() -> Tuple[net.JSONStream, net.JSONStream]:
-    left, right = trio.testing.memory_stream_pair()
-    return net.JSONStream(left), net.JSONStream(right)
+import tests
 
 async def test_lobby_groups() -> None:
 
@@ -25,7 +22,7 @@ async def test_lobby_groups() -> None:
     conn_sendch, conn_getch = trio.open_memory_channel[net.JSONStream](0)
     group_sendch, group_getch = trio.open_memory_channel[Tuple[lobby.Player, ...]](0)
 
-    groups: List[List[lobby.Player]] = []
+    groups: List[Tuple[lobby.Player, ...]] = []
     group: List[lobby.Player] = []
     
     # streams that will still be waiting in the lobby (because they aren't
@@ -41,7 +38,7 @@ async def test_lobby_groups() -> None:
 
             for i in range(player_number):
 
-                left, right = new_stream_pair()
+                left, right = tests.new_stream_pair()
                 if i >= player_number - (player_number % group_size):
                     extra_client_streams.append(left)
 
@@ -56,8 +53,8 @@ async def test_lobby_groups() -> None:
                     group.clear()
 
             with trio.move_on_after(2) as sub:
-                for group in groups:
-                    assert await group_getch.receive() == group
+                for expected in groups:
+                    assert await group_getch.receive() == expected
 
             assert sub.cancelled_caught is False, \
                 "Awaiting group_getch took too long"

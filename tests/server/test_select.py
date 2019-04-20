@@ -1,6 +1,10 @@
+import string
 import trio
 import trio.testing
+import net
+import tests
 import server.sub.select as select
+import server.lobby as lobby
 from typings import *
 
 async def _check_votes_result(
@@ -42,4 +46,65 @@ async def test_get_chosen_world() -> None:
 
     assert cancel_scope.cancelled_caught is False, \
             "checking votes timed out"
+    
+
+async def _check_conversation(
+        worlds: Tuple[Dict[str, str], ...],
+        votes: Tuple[int, ...]) -> None:
+    """ util function for conversation test """
+
+    players: List[lobby.Player] = []
+    ends: List[net.JSONStream] = []
+
+    for i in range(len(votes)):
+        left, right = tests.new_stream_pair()
+        players.append(lobby.Player(right, string.ascii_letters[i]))
+        ends.append(left)
+
+    async def sel() -> None:
+        await select.select(tuple(players), worlds)
+        print("done with select")
+        # we ignore the result of the votes, this isn't the purpose of this test
+
+    async def send_votes(votes: Tuple[int, ...]) -> None:
+        for i, vote in enumerate(votes):
+            print("doing vote", i)
+            assert await ends[i].read() == {
+                "type": "select world",
+                # convert into a list because when the JSON is decoded,
+                # it's decoded as a list, not a tuple
+                "worlds": list(worlds)
+            }
+
+            await ends[i].write({
+                "type": "vote",
+                "index": vote
+            })
+
+            print('waiting for confirmation')
+            msg = await ends[i].read()
+            if vote == -1:
+                assert msg == {"type": "vote", "input": "ignored"}
+            else:
+                assert msg == {"type": "vote", "input": "considered"}
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(sel)
+        nursery.start_soon(send_votes, votes)
+
+
+async def test_conversation() -> None:
+    """ Ensure that the server sends the correct messages to the client """
+    worlds = (
+        {"a": "a"},
+        {"b": "b"},
+        {"c": "c"}
+    )
+
+    with trio.move_on_after(2) as cancel_scope:
+        await _check_conversation(worlds, (0, 1, 1, 2, 0))
+        await _check_conversation(worlds, (0, 1, 1, 2, 2, 2))
+
+    assert cancel_scope.cancelled_caught is False, \
+            "check confirmation timed out"
     

@@ -17,23 +17,23 @@ from typings import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
-def load_worlds_metadata() -> List[Dict[str, str]]:
-    return [
+def load_worlds_metadata() -> Tuple[Dict[str, str], ...]:
+    return (
         {
             "name": "default",
             "description": "don't worry. be happy."
-        }
-    ]
+        },
+    )
 
 async def new_sub(group: Tuple[lobby.Player, ...]) -> None:
     log.info("[sub] select")
     try:
-        worldname = await select.select(group, load_worlds_metadata())
+        chosen_world = await select.select(group, load_worlds_metadata())
     except Exception as e:
         return log.exception("sub crashed: select failed")
 
-    log.info("[sub] world '%s'", worldname)
-    result = await world.world(group, worldname)
+    log.info("[sub] world '%s'", chosen_world['name'])
+    result = await world.world(group, chosen_world)
 
     log.info("[sub] fin")
     await fin.fin(group, result)
