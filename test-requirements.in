@@ -1,0 +1,5 @@
+attrs
+pygame
+trio
+trio-typing
+pytest-trio
