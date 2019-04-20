@@ -16,7 +16,7 @@ if len(sys.argv) != 2:
     print(" - client")
     exit(2)
 
-def main():
+def main() -> None:
     if sys.argv[1] == 'server':
         import server
         trio.run(server.run)

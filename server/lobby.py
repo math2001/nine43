@@ -2,7 +2,7 @@ import attr
 import net
 import trio
 import logging
-from t import *
+from typings import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -17,8 +17,8 @@ class Player:
 
 async def initiate_player(
         stream: net.JSONStream,
-        playerch: trio.abc.SendChannel
-    ):
+        playerch: trio.abc.SendChannel[Player]
+    ) -> None:
 
     log.info("initiating player %s", stream)
 
@@ -38,9 +38,9 @@ async def initiate_player(
     await playerch.send(player)
 
 async def initiate_players(
-        connch: trio.abc.ReceiveChannel,
-        playerch: trio.abc.SendChannel
-    ):
+        connch: trio.abc.ReceiveChannel[net.JSONStream],
+        playerch: trio.abc.SendChannel[Player]
+    ) -> None:
 
     async with playerch:
         async with trio.open_nursery() as nursery:
@@ -60,10 +60,10 @@ async def initiate_players(
                 nursery.cancel_scope.cancel()
 
 async def group_players(
-        playerch: trio.abc.ReceiveChannel,
-        groupch: trio.abc.SendChannel,
+        playerch: trio.abc.ReceiveChannel[Player],
+        groupch: trio.abc.SendChannel[Tuple[Player, ...]],
         group_size: int
-    ):
+    ) -> None:
     """ Stacks players in groups of group_size and sends them on group channel
     """
 
@@ -74,7 +74,7 @@ async def group_players(
             log.info("new player %s", player)
             stack.append(player)
             if len(stack) == group_size:
-                await groupch.send(stack.copy())
+                await groupch.send(tuple(stack))
                 stack.clear()
 
     # close the connections with the players still in the lobby
@@ -84,10 +84,10 @@ async def group_players(
 
 def new_lobby(
         nursery: Nursery,
-        connch: trio.abc.ReceiveChannel,
-        groupch: trio.abc.SendChannel,
+        connch: trio.abc.ReceiveChannel[net.JSONStream],
+        groupch: trio.abc.SendChannel[Tuple[Player, ...]],
         group_size: int
-    ):
+    ) -> None:
 
     """The lobby of the whole server
     
@@ -109,7 +109,7 @@ def new_lobby(
 
     log.info("start lobby")
 
-    player_sendch, player_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel, trio.abc.ReceiveChannel
+    player_sendch, player_getch = trio.open_memory_channel[Player](0)
 
     nursery.start_soon(initiate_players, connch, player_sendch)
     nursery.start_soon(group_players, player_getch, groupch, group_size)

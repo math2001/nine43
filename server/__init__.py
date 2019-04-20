@@ -3,9 +3,8 @@ import errno
 import logging
 import trio
 import net
-from typing import *
-from trio_typing import *
-from server.lobby import new_lobby
+from typings import *
+import server.lobby as lobby
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -18,8 +17,8 @@ GROUP_SIZE = 2
 # because it prevents delegation
 async def _handle_one_listener(
     nursery: Nursery,
-    ln: trio.abc.Listener,
-    conn_sendch: trio.abc.SendChannel) -> None:
+    ln: trio.SocketListener,
+    conn_sendch: SendCh[net.JSONStream]) -> None:
 
     async with ln:
         while True:
@@ -43,26 +42,26 @@ async def _handle_one_listener(
                 nursery.start_soon(conn_sendch.send, net.JSONStream(stream))
 
 
-async def accept_conns(port: int, conn_sendch: trio.abc.SendChannel) -> None:
+async def accept_conns(port: int, conn_sendch: SendCh[net.JSONStream]) -> None:
     listeners = await trio.open_tcp_listeners(port)
     async with trio.open_nursery() as nursery:
         for ln in listeners:
             nursery.start_soon(_handle_one_listener, nursery, ln, conn_sendch)
 
 
-async def server(port, nursery: Nursery) -> None:
+async def server(port: int, nursery: Nursery) -> None:
     """ The overarching piece of the server.
 
     It'll manage monitoring it.
     """
 
-    conn_sendch, conn_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel, trio.abc.ReceiveChannel
-    group_sendch, group_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel, trio.abc.ReceiveChannel
+    conn_sendch, conn_getch = trio.open_memory_channel[net.JSONStream](0)
+    group_sendch, group_getch = trio.open_memory_channel[Tuple[lobby.Player, ...]](0)
 
     nursery.start_soon(accept_conns, port, conn_sendch)
 
-    new_lobby(nursery, conn_getch, group_sendch, GROUP_SIZE)
+    lobby.new_lobby(nursery, conn_getch, group_sendch, GROUP_SIZE)
 
-async def run():
+async def run() -> None:
     async with trio.open_nursery() as nursery:
         server(9999, nursery)

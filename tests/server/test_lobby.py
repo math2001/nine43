@@ -9,8 +9,8 @@ import pytest
 import trio
 import trio.testing
 import net
-from t import *
-import server.lobby
+from typings import *
+import server.lobby as lobby
 
 def new_stream_pair() -> Tuple[net.JSONStream, net.JSONStream]:
     left, right = trio.testing.memory_stream_pair()
@@ -22,11 +22,11 @@ async def test_lobby_groups() -> None:
     player_number = 7
 
     
-    conn_sendch, conn_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel[net.Stream], trio.abc.ReceiveChannel[net.Stream]
-    group_sendch, group_getch = trio.open_memory_channel(0) # type: trio.abc.SendChannel, trio.abc.ReceiveChannel
+    conn_sendch, conn_getch = trio.open_memory_channel[net.JSONStream](0)
+    group_sendch, group_getch = trio.open_memory_channel[Tuple[lobby.Player, ...]](0)
 
-    groups: List[List[server.lobby.Player]] = []
-    group: List[server.lobby.Player] = []
+    groups: List[List[lobby.Player]] = []
+    group: List[lobby.Player] = []
     
     # streams that will still be waiting in the lobby (because they aren't
     # enough). This happens when player_number % group_size != 0
@@ -37,7 +37,7 @@ async def test_lobby_groups() -> None:
             
         async with trio.open_nursery() as nursery:
 
-            server.lobby.new_lobby(nursery, conn_getch, group_sendch, group_size)
+            lobby.new_lobby(nursery, conn_getch, group_sendch, group_size)
 
             for i in range(player_number):
 
@@ -45,9 +45,9 @@ async def test_lobby_groups() -> None:
                 if i >= player_number - (player_number % group_size):
                     extra_client_streams.append(left)
 
-                await left.write({"type": "log in", "username": string.ascii_letters[i]})
+                await left.write(cast(Message, {"type": "log in", "username": string.ascii_letters[i]}))
 
-                group.append(server.lobby.Player(right, string.ascii_letters[i]))
+                group.append(lobby.Player(right, string.ascii_letters[i]))
 
                 await conn_sendch.send(right)
 
@@ -69,6 +69,7 @@ async def test_lobby_groups() -> None:
 
     with trio.move_on_after(2) as cancel_scope:
         for stream in extra_client_streams:
+            # type: ignore
             with pytest.raises(net.ConnectionClosed):
                 await stream.read()
 

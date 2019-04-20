@@ -1,6 +1,7 @@
 import logging
 import json
 import trio
+from typings import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -23,7 +24,7 @@ class JSONStream:
 
         self._read_buf = bytearray()
 
-    async def read(self):
+    async def read(self) -> Message:
         async with self._read_cap:
             log.debug(f"Acquired reading semaphore")
             i = self._read_buf.find(b'\n')
@@ -52,7 +53,7 @@ class JSONStream:
             raise ValueError(f"Invalid empty value: {line!r}")
 
         try:
-            obj = json.loads(line)
+            obj= cast(Message, json.loads(line))
         except ValueError:
             log.exception(f"Invalid JSON: {line!r}")
             raise
@@ -63,7 +64,7 @@ class JSONStream:
         log.info(f"Read {obj!r}")
         return obj
 
-    async def write(self, obj):
+    async def write(self, obj: Message) -> None:
         log.info(f"Sending {obj}")
         if not isinstance(obj, dict):
             raise ValueError(f"should send dict, got {obj!r}")
@@ -75,7 +76,7 @@ class JSONStream:
             except trio.BrokenResourceError:
                 raise ConnectionClosed(f"stream closed while writing")
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         log.info(f"Closing stream {self}")
         with trio.move_on_after(1) as cancel_scope:
             await self._write_cap.acquire()
@@ -92,8 +93,8 @@ class JSONStream:
         self._write_cap.release()
         self._read_cap.release()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "JSONStream()"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
