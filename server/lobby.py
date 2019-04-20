@@ -1,3 +1,9 @@
+""" The lobby
+
+To make the loop back easier (fin to lobby), the server itself should ask the
+clients for their username, not the lobby.
+"""
+
 import attr
 import net
 import trio

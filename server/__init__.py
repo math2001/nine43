@@ -53,7 +53,7 @@ async def accept_conns(port: int, conn_sendch: SendCh[net.JSONStream]) -> None:
 async def start_subs(groupch: RecvCh[Tuple[lobby.Player, ...]]) -> None:
     async with trio.open_nursery() as nursery:
         async for group in groupch:
-            sub.new_sub(nursery, group)
+            nursery.start_soon(sub.new_sub, group)
 
 async def server(port: int, nursery: Nursery) -> None:
     """ The overarching piece of the server.
