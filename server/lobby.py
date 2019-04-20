@@ -77,6 +77,7 @@ async def group_players(
                 await groupch.send(tuple(stack))
                 stack.clear()
 
+    # playerch has been closed, close groupch and
     # close the connections with the players still in the lobby
     async with trio.open_nursery() as nursery:
         for player in stack:

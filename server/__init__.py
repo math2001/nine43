@@ -5,6 +5,7 @@ import trio
 import net
 from typings import *
 import server.lobby as lobby
+import server.sub as sub
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -49,6 +50,11 @@ async def accept_conns(port: int, conn_sendch: SendCh[net.JSONStream]) -> None:
             nursery.start_soon(_handle_one_listener, nursery, ln, conn_sendch)
 
 
+async def start_subs(groupch: RecvCh[Tuple[lobby.Player, ...]]) -> None:
+    async with trio.open_nursery() as nursery:
+        async for group in groupch:
+            sub.new_sub(nursery, group)
+
 async def server(port: int, nursery: Nursery) -> None:
     """ The overarching piece of the server.
 
@@ -61,6 +67,8 @@ async def server(port: int, nursery: Nursery) -> None:
     nursery.start_soon(accept_conns, port, conn_sendch)
 
     lobby.new_lobby(nursery, conn_getch, group_sendch, GROUP_SIZE)
+
+    nursery.start_soon(start_subs, group_getch)
 
 async def run() -> None:
     async with trio.open_nursery() as nursery:

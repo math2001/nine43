@@ -52,12 +52,12 @@ async def test_lobby_groups() -> None:
                 await conn_sendch.send(right)
 
                 if len(group) == group_size:
-                    groups.append(group.copy())
+                    groups.append(tuple(group))
                     group.clear()
 
             with trio.move_on_after(2) as sub:
                 for group in groups:
-                    assert (await group_getch.receive()) == group
+                    assert await group_getch.receive() == group
 
             assert sub.cancelled_caught is False, \
                 "Awaiting group_getch took too long"
@@ -69,13 +69,19 @@ async def test_lobby_groups() -> None:
 
     with trio.move_on_after(2) as cancel_scope:
         for stream in extra_client_streams:
-            # type: ignore
             with pytest.raises(net.ConnectionClosed):
                 await stream.read()
 
     assert cancel_scope.cancelled_caught is False, \
             "extra client streams should have been closed by the lobby " \
             "(took too long to raise error trying to read it)"
+
+    with trio.move_on_after(2) as cancel_scope:
+        with pytest.raises(trio.EndOfChannel):
+            await group_getch.receive()
+
+    assert cancel_scope.cancelled_caught is False,\
+            "group get channel blocked for too long (should have been closed)"
 
     # Note that the other connection that the lobby has *given* to the server
     # should still be open.
