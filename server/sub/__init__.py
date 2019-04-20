@@ -32,7 +32,7 @@ async def new_sub(group: Tuple[lobby.Player, ...]) -> None:
     except Exception as e:
         return log.exception("sub crashed: select failed")
 
-    log.info("[sub] world")
+    log.info("[sub] world '%s'", worldname)
     result = await world.world(group, worldname)
 
     log.info("[sub] fin")

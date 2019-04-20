@@ -20,8 +20,8 @@ async def _check_votes_result(
             await votesch.send(vote)
 
     async def check_decision() -> None:
-        i = await select.get_chosen_world(votes_getch, nworlds, len(votes))
-        assert i in answers
+        indexes = await select.get_chosen_world(votes_getch, nworlds, len(votes))
+        assert indexes == answers
 
     with trio.move_on_after(2) as cancel_scope:
         async with trio.open_nursery() as nursery:
@@ -35,10 +35,11 @@ async def _check_votes_result(
 async def test_get_chosen_world() -> None:
     with trio.move_on_after(2) as cancel_scope:
         await _check_votes_result([1, 2, 1, 2, 3, 4, -1], [1, 2], 5)
-        # await _check_votes_result([1, 2, 3, 1], [1], 3)
-        # await _check_votes_result([1, 2, 3, 1], [1], 3)
-        # await _check_votes_result([1, 2, 3, 4], [1, 2, 3, 4], 4)
-        # await _check_votes_result([-1, -1], [1, 2, 3, 4, 5], 5)
+        await _check_votes_result([1, 2, 3, 1], [1], 4)
+        await _check_votes_result([0, 2, 3, 1], [0, 1, 2, 3], 4)
+        await _check_votes_result([1, 2, 3, 4], [1, 2, 3, 4], 5)
+        await _check_votes_result([-1, -1], [0, 1, 2, 3, 4], 5)
+
     assert cancel_scope.cancelled_caught is False, \
             "checking votes timed out"
     
