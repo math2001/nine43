@@ -2,6 +2,8 @@ import attr
 import net
 from typings import *
 
+__all__ = ["Member", "Lockable"]
+
 @attr.s(auto_attribs=True)
 class Member:
 
@@ -21,12 +23,19 @@ class Lockable(Generic[T]):
         self._val = val
         self._cap = trio.CapacityLimiter(1)
 
-    async def __aenter__(self) -> T:
+    async def acquire(self) -> T:
         await self._cap.acquire()
+        return self._val
+
+    def release(self) -> None:
+        self._cap.release()
+
+    async def __aenter__(self) -> T:
+        await self.acquire()
         return self._val
 
     def val(self) -> T:
         return self._val
 
     async def __aexit__(self, *exc: Any) -> None:
-        self._cap.release()
+        self.release()

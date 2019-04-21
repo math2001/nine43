@@ -1,15 +1,50 @@
 import logging
 import net
 import trio
-from server.types import Member
+from server.types import *
 from typings import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+async def get_username(
+        stream: net.JSONStream,
+        usernameslk: Lockable[List[str]]
+    ) -> Optional[str]:
+
+    msg = await stream.read()
+
+    if msg['type'] != "log in":
+        log.warning("initiating conn: invalid type %s", msg)
+        return None
+
+    if 'username' not in msg:
+        log.warning("initiating conn: no 'username' %s", msg)
+        return None
+
+
+    usernames = await usernameslk.acquire()
+    if msg['username'] in usernames:
+        log.info(f"username taken: {msg['username']!r}")
+        await stream.write({
+            "type": "log in update",
+            "state": "refused",
+            "message": "username taken"
+        })
+        usernameslk.release()
+        return await get_username(stream, usernameslk)
+    else:
+        usernames.append(msg['username'])
+        usernameslk.release()
+
+    log.debug(f"got username {msg['username']!r}")
+    return msg['username']
+
+
 async def initiate_conn(
         rawstream: trio.abc.Stream,
-        memberch: SendCh[Member]
+        memberch: SendCh[Member],
+        usernameslk: Lockable[List[str]]
     ) -> None:
 
     log.debug("initiating stream")
@@ -17,29 +52,23 @@ async def initiate_conn(
     stream = net.JSONStream(rawstream)
 
     with trio.move_on_after(120) as cancel_scope:
-        # request log in infos
-        try:
-            await stream.write({"type": "log in"})
-        except net.ConnectionClosed:
-            return log.exception("initiating conn: asking infos")
 
-        try:
-            msg = await stream.read()
-        except net.ConnectionClosed:
-            return log.exception("initiating conn; reading response")
+        log.debug("asking for log in infos")
 
-        if msg['type'] != "log in":
-            return log.warning("initiating conn: invalid type %s", msg)
+        await stream.write({"type": "log in"})
 
-        if 'username' not in msg:
-            return log.warning("initiating conn: no 'username' %s", msg)
+        log.debug("getting valid username")
 
-        member = Member(stream, msg['username'])
+        username = await get_username(stream, usernameslk)
+        if not username:
+            return log.warning("connection dropped")
 
-        try:
-            await stream.write({"type": "log in update", "state": "accepted"})
-        except net.ConnectionClosed:
-            return log.exception("initiating conn: sending 'accept' update")
+
+        member = Member(stream, username)
+
+        log.debug(f"{username!r} accepted")
+
+        await stream.write({"type": "log in update", "state": "accepted"})
 
         log.info("conn initialized %s", member)
 
@@ -60,14 +89,14 @@ async def initiator(
 
     log.info("initiator started")
 
+    usernameslk = Lockable[List[str]]([])
+
     async with memberch:
         async with trio.open_nursery() as nursery:
             async for conn in connch:
-                nursery.start_soon(initiate_conn, conn, memberch)
+                nursery.start_soon(initiate_conn, conn, memberch, usernameslk)
 
             log.debug("connch closed. %d tasks left in nursery",
                 len(nursery.child_tasks))
-
-        log.critical("closing memberch")
 
     log.info("initiator stopped")

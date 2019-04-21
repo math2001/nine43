@@ -4,7 +4,7 @@ import trio
 from typings import *
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.WARNING)
+log.setLevel(logging.INFO)
 
 BUFSIZE = 4096
 
