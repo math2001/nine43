@@ -81,7 +81,7 @@ async def select(
         "worlds": worlds
     }
 
-    votes_sendch, votes_getch = trio.open_memory_channel[int](0)
+    votes_sendch, votes_recvch = trio.open_memory_channel[int](0)
 
     async with trio.open_nursery() as nursery:
         log.debug("sending worlds")
@@ -91,5 +91,5 @@ async def select(
         for player in group:
             nursery.start_soon(gather_vote, player, votes_sendch)
 
-        indexes = await get_chosen_world(votes_getch, len(worlds), len(group))
+        indexes = await get_chosen_world(votes_recvch, len(worlds), len(group))
     return worlds[random.choice(indexes)]

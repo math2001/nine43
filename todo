@@ -1,5 +1,5 @@
 - log all communication to files
-- use clone instead of fan in
 
+DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
 DONE check for duplicate username

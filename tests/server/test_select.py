@@ -17,14 +17,14 @@ async def _check_votes_result(
     worlds get the same amount of vote, one gets choosen randomly
     """
 
-    votes_sendch, votes_getch = trio.open_memory_channel[int](0)
+    votes_sendch, votes_recvch = trio.open_memory_channel[int](0)
 
     async def send_votes(votesch: SendCh[int]) -> None:
         for vote in votes:
             await votesch.send(vote)
 
     async def check_decision() -> None:
-        indexes = await select.get_chosen_world(votes_getch, nworlds, len(votes))
+        indexes = await select.get_chosen_world(votes_recvch, nworlds, len(votes))
         assert indexes == answers
 
     with trio.move_on_after(2) as cancel_scope:

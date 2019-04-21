@@ -20,8 +20,8 @@ async def test_lobby_groups() -> None:
     player_number = 7
 
     
-    conn_sendch, conn_getch = trio.open_memory_channel[net.JSONStream](0)
-    group_sendch, group_getch = trio.open_memory_channel[Tuple[Member, ...]](0)
+    conn_sendch, conn_recvch = trio.open_memory_channel[net.JSONStream](0)
+    group_sendch, group_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
 
     groups: List[Tuple[Member, ...]] = []
     group: List[Member] = []
@@ -35,7 +35,7 @@ async def test_lobby_groups() -> None:
             
         async with trio.open_nursery() as nursery:
 
-            lobby.new_lobby(nursery, conn_getch, group_sendch, group_size)
+            lobby.new_lobby(nursery, conn_recvch, group_sendch, group_size)
 
             for i in range(player_number):
 
@@ -55,10 +55,10 @@ async def test_lobby_groups() -> None:
 
             with trio.move_on_after(2) as sub:
                 for expected in groups:
-                    assert await group_getch.receive() == expected
+                    assert await group_recvch.receive() == expected
 
             assert sub.cancelled_caught is False, \
-                "Awaiting group_getch took too long"
+                "Awaiting group_recvch took too long"
 
             await conn_sendch.aclose()
 
@@ -76,7 +76,7 @@ async def test_lobby_groups() -> None:
 
     with trio.move_on_after(2) as cancel_scope:
         with pytest.raises(trio.EndOfChannel):
-            await group_getch.receive()
+            await group_recvch.receive()
 
     assert cancel_scope.cancelled_caught is False,\
             "group get channel blocked for too long (should have been closed)"
