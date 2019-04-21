@@ -30,3 +30,16 @@ async def initiate_conn(
     member = Member(stream, msg['username'])
     log.info("conn initialized %s", member)
     await memberch.send(member)
+
+async def initiator(
+        connch: RecvCh[trio.SocketStream],
+        memberch: SendCh[Member]
+    ) -> None:
+
+    log.info("initiator started")
+
+    async with trio.open_nursery() as nursery:
+        async for conn in connch:
+            nursery.start_soon(initiate_conn, conn, memberch)
+                
+    log.info("memberch closed")
