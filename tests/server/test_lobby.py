@@ -141,3 +141,22 @@ async def test_lobby() -> None:
     assert cancel_scope.cancelled_caught is False, \
             "lobby test took to long"
     
+async def test_watch_close() -> None:
+    left, right = new_stream_member(username='a')
+    sendch, recvch = trio.open_memory_channel[Member](0)
+
+    async def monitor(
+            client_end: Member,
+            server_end: Member,
+            ch: RecvCh[Member]
+        ) -> None:
+
+        with pytest.raises(trio.WouldBlock):
+            ch.receive_nowait()
+
+        await client_end.stream.aclose()
+        assert await ch.receive() == server_end
+
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(lobby.watch_close, right, sendch)
+        nursery.start_soon(monitor, left, right, recvch)

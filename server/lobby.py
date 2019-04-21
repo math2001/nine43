@@ -29,6 +29,19 @@ async def watch_close(
         member: Member,
         member_leftch: SendCh[Member]
     ) -> None:
+    """ sends member on member_leftch as soon as its stream is closed
+
+    The only way to check if a TCP connection closed by the other end is to
+    read from it, and check for errors.
+
+    This doesn't consume any message because it is cancelled before it gets a
+    chance to read anything (this is managed by the function add_new_members)
+
+    Therefore: this only works if NO MESSAGE IS BEING SENT TO THE STREAM
+
+    Note: this watch close could be implemented to watch *all* streams on the
+    stack. Might be a better idea...
+    """
     log.debug(f"watching connection close {member}")
     try:
         msg = await member.stream.read()
