@@ -14,3 +14,19 @@ class Member:
         return isinstance(o, Member) \
             and o.stream is self.stream \
             and o.username == self.username
+
+class Lockable(Generic[T]):
+
+    def __init__(self, val: T):
+        self._val = val
+        self._cap = trio.CapacityLimiter(1)
+
+    async def __aenter__(self) -> T:
+        await self._cap.acquire()
+        return self._val
+
+    def val(self) -> T:
+        return self._val
+
+    async def __aexit__(self, *exc: Any) -> None:
+        self._cap.release()

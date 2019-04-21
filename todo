@@ -1,2 +1,3 @@
 - log all communication to files
 - check for duplicate username
+- use clone instead of fan in
