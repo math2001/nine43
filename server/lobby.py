@@ -92,7 +92,6 @@ async def add_new_members(
                         stack.clear()
                         need_more_members = False
 
-
             nursery.cancel_scope.cancel()
 
         if len(final_stack) != group_size:

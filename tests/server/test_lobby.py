@@ -88,13 +88,13 @@ async def test_lobby() -> None:
         await send(c_left, c_right, memberch)
         await send(d_left, d_right, memberch)
 
-        # await send(e_left, e_right, memberch)
-        # await send(f_left, f_right, memberch)
-        # await f_left.stream.aclose()
-        # await send(g_left, g_right, memberch)
+        await send(e_left, e_right, memberch)
+        await send(f_left, f_right, memberch)
+        await f_left.stream.aclose()
+        await send(g_left, g_right, memberch)
 
-        # await send(h_left, h_right, memberch)
-        # await send(i_left, i_right, memberch)
+        await send(h_left, h_right, memberch)
+        await send(i_left, i_right, memberch)
 
         print('closing channel')
         await memberch.aclose()
@@ -108,19 +108,25 @@ async def test_lobby() -> None:
         await groups_event.wait()
         first = groups[0]
         second = groups[1]
-        i_left = groups[1][0]
+        i_left = groups[2][0]
 
         print('waiting for first group')
         assert await groupch.receive() == groups[0]
         print('waiting for second group')
-        # assert await groupch.receive() == groups[1]
+        assert await groupch.receive() == groups[1]
+
+        with pytest.raises(trio.EndOfChannel):
+            resp = await groupch.receive()
+            assert False, \
+                f"read from groupch returned {resp!r}, should raise trio.EndOfChannel"
 
         print('asserting close connection')
 
-        # with pytest.raises(net.ConnectionClosed):
-        #     print('reading to get "closed"')
-        #     msg = await i_left.stream.read()
-        #     print(f"got something while expecting close {msg!r}")
+        with pytest.raises(net.ConnectionClosed):
+            print(f'reading to get "closed" from {i_left}')
+            msg = await i_left.stream.read()
+            assert False, \
+                f"read returned message: {msg!r}. Should have raised net.ConnectionClosed"
 
         print('[done] check groupch: connection closed')
 
