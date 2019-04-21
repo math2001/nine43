@@ -1,4 +1,5 @@
 - log all communication to files: pretty much write your own log librairy
+- let's play with ci!!
 
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
