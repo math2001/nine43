@@ -3,9 +3,12 @@ import errno
 import logging
 import trio
 import net
-from typings import *
+
+import server.initiator as initiator
 import server.lobby as lobby
-import server.sub as sub
+import server.submanager as submanager
+from server.types import Member
+from typings import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -20,7 +23,7 @@ GROUP_SIZE = 2
 async def _handle_one_listener(
     nursery: Nursery,
     ln: trio.SocketListener,
-    conn_sendch: SendCh[net.JSONStream]) -> None:
+    connch: SendCh[trio.SocketStream]) -> None:
 
     async with ln:
         while True:
@@ -41,37 +44,37 @@ async def _handle_one_listener(
                 else:
                     raise
             else:
-                nursery.start_soon(conn_sendch.send, net.JSONStream(stream))
+                nursery.start_soon(connch.send, stream)
 
 
-async def accept_conns(port: int, conn_sendch: SendCh[net.JSONStream]) -> None:
+async def accept_conns(port: int, connch: SendCh[trio.SocketStream]) -> None:
     listeners = await trio.open_tcp_listeners(port)
     async with trio.open_nursery() as nursery:
         for ln in listeners:
-            nursery.start_soon(_handle_one_listener, nursery, ln, conn_sendch)
+            nursery.start_soon(_handle_one_listener, nursery, ln, connch)
 
-
-async def start_subs(groupch: RecvCh[Tuple[lobby.Player, ...]]) -> None:
-    async with trio.open_nursery() as nursery:
-        async for group in groupch:
-            nursery.start_soon(sub.new_sub, group)
-
-async def server(port: int, nursery: Nursery) -> None:
+async def run(port: int) -> None:
     """ The overarching piece of the server.
 
     It'll manage monitoring it.
+
+    network ->  initiator -> lobby -> submanager :: spawns subs -> back to lobby
+         connch        memberch  groupch                     memberch
+
     """
 
-    conn_sendch, conn_getch = trio.open_memory_channel[net.JSONStream](0)
-    group_sendch, group_getch = trio.open_memory_channel[Tuple[lobby.Player, ...]](0)
+    log.debug("starting server on port %d", port)
 
-    nursery.start_soon(accept_conns, port, conn_sendch)
-
-    lobby.new_lobby(nursery, conn_getch, group_sendch, GROUP_SIZE)
-
-    nursery.start_soon(start_subs, group_getch)
-
-async def run() -> None:
-    log.debug("starting server on port %d", PORT)
     async with trio.open_nursery() as nursery:
-        await server(PORT, nursery)
+
+        conn_sendch, conn_getch = trio.open_memory_channel[Any](0)
+        member_sendch, member_getch = trio.open_memory_channel[Member](0)
+        group_sendch, group_getch = trio.open_memory_channel[Tuple[Member, ...]](0)
+
+        nursery.start_soon(accept_conns, port, conn_sendch)
+
+        nursery.start_soon(initiator.initiator, conn_getch, member_sendch)
+
+        nursery.start_soon(lobby.lobby, member_getch, group_sendch, GROUP_SIZE)
+
+        nursery.start_soon(submanager.submanager, group_getch, member_sendch)

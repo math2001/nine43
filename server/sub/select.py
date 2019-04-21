@@ -10,12 +10,13 @@ It should also handle timeouts.
 import logging
 import random
 from typings import *
+from server.types import Member
 import server.lobby as lobby
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-async def gather_vote(player: lobby.Player, votesch: SendCh[int]) -> None:
+async def gather_vote(player: Member, votesch: SendCh[int]) -> None:
     log.debug("waiting for vote from %s", player)
     resp = await player.stream.read()
     log.debug("got response from %s: %s", player, resp)
@@ -70,7 +71,7 @@ async def get_chosen_world(
             indexes.append(i)
 
 async def select(
-        group: Tuple[lobby.Player, ...],
+        group: Tuple[Member, ...],
         worlds: Tuple[Dict[str, str], ...]
     ) -> Dict[str, str]:
 

@@ -9,9 +9,10 @@ import pytest
 import trio
 import trio.testing
 import net
-from typings import *
-import server.lobby as lobby
 import tests
+import server.lobby as lobby
+from typings import *
+from server.types import Member
 
 async def test_lobby_groups() -> None:
 
@@ -20,10 +21,10 @@ async def test_lobby_groups() -> None:
 
     
     conn_sendch, conn_getch = trio.open_memory_channel[net.JSONStream](0)
-    group_sendch, group_getch = trio.open_memory_channel[Tuple[lobby.Player, ...]](0)
+    group_sendch, group_getch = trio.open_memory_channel[Tuple[Member, ...]](0)
 
-    groups: List[Tuple[lobby.Player, ...]] = []
-    group: List[lobby.Player] = []
+    groups: List[Tuple[Member, ...]] = []
+    group: List[Member] = []
     
     # streams that will still be waiting in the lobby (because they aren't
     # enough). This happens when player_number % group_size != 0
@@ -44,7 +45,7 @@ async def test_lobby_groups() -> None:
 
                 await left.write(cast(Message, {"type": "log in", "username": string.ascii_letters[i]}))
 
-                group.append(lobby.Player(right, string.ascii_letters[i]))
+                group.append(Member(right, string.ascii_letters[i]))
 
                 await conn_sendch.send(right)
 
