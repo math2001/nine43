@@ -53,22 +53,38 @@ async def initiate_conn(
 
     with trio.move_on_after(120) as cancel_scope:
 
-        log.debug("asking for log in infos")
+        username = None
 
-        await stream.write({"type": "log in"})
+        try:
 
-        log.debug("getting valid username")
+            log.debug("asking for log in infos")
 
-        username = await get_username(stream, usernameslk)
-        if not username:
-            return log.warning("connection dropped")
+            await stream.write({"type": "log in"})
+
+            log.debug("getting valid username")
+
+            username = await get_username(stream, usernameslk)
+            if not username:
+                return log.warning("connection dropped")
 
 
-        member = Member(stream, username)
+            member = Member(stream, username)
 
-        log.debug(f"{username!r} accepted")
+            log.debug(f"{username!r} accepted")
 
-        await stream.write({"type": "log in update", "state": "accepted"})
+            await stream.write({"type": "log in update", "state": "accepted"})
+
+        except net.ConnectionClosed:
+            log.exception("connection dropped")
+
+            # remove username from the list of usernames
+            if username is not None:
+                async with usernameslk as usernames:
+                    try:
+                        usernames.remove(username)
+                    except ValueError:
+                        pass
+            return
 
         log.info("conn initialized %s", member)
 
