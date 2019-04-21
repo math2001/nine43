@@ -63,12 +63,10 @@ async def _check_conversation(
 
     async def sel() -> None:
         await select.select(tuple(players), worlds)
-        print("done with select")
         # we ignore the result of the votes, this isn't the purpose of this test
 
     async def send_votes(votes: Tuple[int, ...]) -> None:
         for i, vote in enumerate(votes):
-            print("doing vote", i)
             assert await ends[i].read() == {
                 "type": "select world",
                 # convert into a list because when the JSON is decoded,
@@ -81,7 +79,6 @@ async def _check_conversation(
                 "index": vote
             })
 
-            print('waiting for confirmation')
             msg = await ends[i].read()
             if vote == -1:
                 assert msg == {"type": "vote", "input": "ignored"}

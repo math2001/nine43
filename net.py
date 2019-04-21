@@ -4,7 +4,7 @@ import trio
 from typings import *
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 
 BUFSIZE = 4096
 
@@ -94,7 +94,14 @@ class JSONStream:
         self._read_cap.release()
 
     def __str__(self) -> str:
-        return "JSONStream()"
+        return f"JSONStream({self._stream})"
 
     def __repr__(self) -> str:
         return str(self)
+
+    def __eq__(self, o: Any) -> bool:
+        return (
+            isinstance(o, JSONStream)
+            and self._stream is o._stream
+            and self._read_buf == o._read_buf
+        )

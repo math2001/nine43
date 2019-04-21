@@ -16,7 +16,6 @@ Remember: when you send something through a channel, you *give up its
 
 """
 
-import net
 import trio
 import logging
 from server.types import Member
@@ -36,14 +35,14 @@ async def lobby(
     async with groupch:
         stack: List[Member] = []
         log.debug("waiting for new players to group...")
-        async for player in playerch:
-            log.info("new player %s", player)
-            stack.append(player)
+        async for member in memberch:
+            log.info("new member %s", member)
+            stack.append(member)
             if len(stack) == group_size:
                 await groupch.send(tuple(stack))
                 stack.clear()
 
-    # playerch has been closed, close groupch and
+    # memberch has been closed, close groupch and
     # close the connections with the players still in the lobby
     async with trio.open_nursery() as nursery:
         for player in stack:
