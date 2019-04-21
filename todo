@@ -1,5 +1,7 @@
 - log all communication to files: pretty much write your own log librairy
 - let's play with ci!!
+- build better trio.Sequence
+- initiator test make more clean
 
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator

@@ -1,2 +1,16 @@
 - race conditions with channels
 - aenumerate
+
+What the hell:
+
+	import trio
+
+	async def main() -> None:
+
+	    async with trio.open_nursery() as nursery:
+	        nursery.cancel_scope.cancel()
+	        print('cancelled')
+	        await trio.sleep(2)
+	        print('slept?')
+
+	trio.run(main)

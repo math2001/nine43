@@ -1,12 +1,14 @@
 import logging
 import json
 import trio
+from utils import truncate_middle
 from typings import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 BUFSIZE = 4096
+
 
 class ConnectionClosed(Exception):
     pass
@@ -61,11 +63,11 @@ class JSONStream:
         if not isinstance(obj, dict):
             raise ValueError(f"should be dict, got {type(obj)} in {obj}")
 
-        log.info(f"Read {obj!r}")
+        log.debug(f"Read {obj!r}")
         return obj
 
     async def write(self, obj: Message) -> None:
-        log.info(f"Sending {obj}")
+        log.debug(f"Sending {obj}")
         if not isinstance(obj, dict):
             raise ValueError(f"should send dict, got {obj!r}")
 
@@ -77,7 +79,7 @@ class JSONStream:
                 raise ConnectionClosed(f"stream closed while writing")
 
     async def aclose(self) -> None:
-        log.info(f"Closing stream {self}")
+        log.info(f"closing stream {self}")
         with trio.move_on_after(1) as cancel_scope:
             await self._write_cap.acquire()
             log.debug("Got write semaphore")
@@ -94,7 +96,7 @@ class JSONStream:
         self._read_cap.release()
 
     def __str__(self) -> str:
-        return f"JSONStream({self._stream})"
+        return f"JSONStream({truncate_middle(repr(self._stream), 20)})"
 
     def __repr__(self) -> str:
         return str(self)

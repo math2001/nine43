@@ -1,10 +1,11 @@
 import attr
 import net
 from typings import *
+from utils import truncate_middle
 
 __all__ = ["Member", "Lockable"]
 
-@attr.s(auto_attribs=True)
+@attr.s(auto_attribs=True, str=False, repr=False)
 class Member:
 
     """ A player waiting in the lobby """
@@ -16,6 +17,12 @@ class Member:
         return isinstance(o, Member) \
             and o.stream is self.stream \
             and o.username == self.username
+
+    def __str__(self) -> str:
+        return f"Member({self.username!r}, {truncate_middle(repr(self.stream), 20)})"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 class Lockable(Generic[T]):
 

@@ -12,7 +12,7 @@ import net
 import tests
 import server.lobby as lobby
 from typings import *
-from server.types import Member
+from server.types import *
 
 def new_stream_member(username: str) -> Tuple[Member, Member]:
     left, right = trio.testing.memory_stream_pair()
@@ -33,6 +33,9 @@ async def test_lobby() -> None:
     # send user G
     # send user H
     # check on group_recvch (should have (E, G, H))
+    # send user i
+    # close memberch
+    # ensure user I get's closed nicely (how?)
     """
 
 
@@ -40,24 +43,28 @@ async def test_lobby() -> None:
     group_sendch, group_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
 
     async def send(
+            client_end: Member,
             member: Member,
             memberch: SendCh[Member],
         ) -> None:
-
-        with trio.move_on_after(2) as cancel_scope:
+        with trio.move_on_after(1) as cancel_scope:
+            # print('waiting for memberch', client_end)
             await memberch.send(member)
-            assert await member.stream.read() == {"type": "lobby", "message": "welcome"}
+            # print('waiting for confirmation', client_end)
+            assert await client_end.stream.read() == {"type": "lobby", "message": "welcome"}
+            # print('got confirmation', client_end)
 
         assert cancel_scope.cancelled_caught is False, \
                 f"lobby welcome message took to long for {member}"
-        
-    async def monitor(
-            memberch: SendCh[Member],
-            groupch: RecvCh[Tuple[Member, ...]]
-        ) -> None:
 
-        # right is the part that is send to the server, and left the part that
-        # is acting as the client.
+
+    groups_event = trio.Event()
+    groups: List[Tuple[Member, ...]] = []
+
+    async def send_sequence(
+            memberch: SendCh[Member],
+            seq: trio.testing.Sequencer
+        ) -> None:
 
         a_left, a_right = new_stream_member(username="a")
         b_left, b_right = new_stream_member(username="b")
@@ -67,23 +74,70 @@ async def test_lobby() -> None:
         f_left, f_right = new_stream_member(username="f")
         g_left, g_right = new_stream_member(username="g")
         h_left, h_right = new_stream_member(username="h")
+        i_left, i_right = new_stream_member(username="i")
 
-        await send(a_right, memberch)
-        await send(b_right, memberch)
+
+        groups.append((b_right, c_right, d_right))
+        groups.append((e_right, g_right, h_right))
+        groups.append((i_left, ))
+        groups_event.set()
+
+        await send(a_left, a_right, memberch)
+        await send(b_left, b_right, memberch)
         await a_left.stream.aclose()
-        await send(c_right, memberch)
+        await send(c_left, c_right, memberch)
+        await send(d_left, d_right, memberch)
 
-        assert await groupch.receive() == (b_right, c_right, d_right)
+        # await send(e_left, e_right, memberch)
+        # await send(f_left, f_right, memberch)
+        # await f_left.stream.aclose()
+        # await send(g_left, g_right, memberch)
 
-        await send(e_right, memberch)
-        await send(f_right, memberch)
-        await f_left.stream.aclose()
-        await send(g_right, memberch)
-        await send(h_right, memberch)
+        # await send(h_left, h_right, memberch)
+        # await send(i_left, i_right, memberch)
 
-        assert await groupch.receive() == (e_right, g_right, h_right)
+        print('closing channel')
+        await memberch.aclose()
+        print('[done] send sequence: channel closed')
 
-    with trio.move_on_after(2) as cancel_scope:
+    async def check_groupch(
+            groupch: RecvCh[Tuple[Member, ...]],
+            seq: trio.testing.Sequencer
+        ) -> None:
+
+        await groups_event.wait()
+        first = groups[0]
+        second = groups[1]
+        i_left = groups[1][0]
+
+        print('waiting for first group')
+        assert await groupch.receive() == groups[0]
+        print('waiting for second group')
+        # assert await groupch.receive() == groups[1]
+
+        print('asserting close connection')
+
+        # with pytest.raises(net.ConnectionClosed):
+        #     print('reading to get "closed"')
+        #     msg = await i_left.stream.read()
+        #     print(f"got something while expecting close {msg!r}")
+
+        print('[done] check groupch: connection closed')
+
+    async def monitor(
+            memberch: SendCh[Member],
+            groupch: RecvCh[Tuple[Member, ...]]
+        ) -> None:
+
+        # right is the part that is send to the server, and left the part that
+        # is acting as the client.
+        seq = trio.testing.Sequencer()
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(send_sequence, member_sendch, seq)
+            nursery.start_soon(check_groupch, groupch, seq)
+        print('monitor finished')
+
+    with trio.move_on_after(3) as cancel_scope:
         async with trio.open_nursery() as nursery:
             nursery.start_soon(monitor, member_sendch, group_recvch)
             nursery.start_soon(lobby.lobby, member_recvch, group_sendch, 3)
