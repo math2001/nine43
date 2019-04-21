@@ -35,9 +35,11 @@ async def lobby(
     async with groupch:
         stack: List[Member] = []
         log.debug("waiting for new players to group...")
+        
         async for member in memberch:
             log.info("new member %s", member)
             stack.append(member)
+
             if len(stack) == group_size:
                 await groupch.send(tuple(stack))
                 stack.clear()

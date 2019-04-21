@@ -14,6 +14,87 @@ import server.lobby as lobby
 from typings import *
 from server.types import Member
 
+def new_stream_member(username: str) -> Tuple[Member, Member]:
+    left, right = trio.testing.memory_stream_pair()
+    return Member(net.JSONStream(left), username), Member(net.JSONStream(right), username)
+
+async def test_lobby() -> None:
+    """ integration test
+
+    # send user A
+    # send user B
+    # user A closes its connection
+    # send user C
+    # send user D
+    # check on group_recvch (should have (B, C, D))
+    # send user E
+    # send user F
+    # user F quits
+    # send user G
+    # send user H
+    # check on group_recvch (should have (E, G, H))
+    """
+
+
+    member_sendch, member_recvch = trio.open_memory_channel[Member](0)
+    group_sendch, group_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
+
+    async def send(
+            member: Member,
+            memberch: SendCh[Member],
+        ) -> None:
+
+        with trio.move_on_after(2) as cancel_scope:
+            await memberch.send(member)
+            assert await member.stream.read() == {"type": "lobby", "message": "welcome"}
+
+        assert cancel_scope.cancelled_caught is False, \
+                f"lobby welcome message took to long for {member}"
+        
+    async def monitor(
+            memberch: SendCh[Member],
+            groupch: RecvCh[Tuple[Member, ...]]
+        ) -> None:
+
+        # right is the part that is send to the server, and left the part that
+        # is acting as the client.
+
+        a_left, a_right = new_stream_member(username="a")
+        b_left, b_right = new_stream_member(username="b")
+        c_left, c_right = new_stream_member(username="c")
+        d_left, d_right = new_stream_member(username="d")
+        e_left, e_right = new_stream_member(username="e")
+        f_left, f_right = new_stream_member(username="f")
+        g_left, g_right = new_stream_member(username="g")
+        h_left, h_right = new_stream_member(username="h")
+
+        await send(a_right, memberch)
+        await send(b_right, memberch)
+        await a_left.stream.aclose()
+        await send(c_right, memberch)
+
+        assert await groupch.receive() == (b_right, c_right, d_right)
+
+        await send(e_right, memberch)
+        await send(f_right, memberch)
+        await f_left.stream.aclose()
+        await send(g_right, memberch)
+        await send(h_right, memberch)
+
+        assert await groupch.receive() == (e_right, g_right, h_right)
+
+    with trio.move_on_after(2) as cancel_scope:
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(monitor, member_sendch, group_recvch)
+            nursery.start_soon(lobby.lobby, member_recvch, group_sendch, 3)
+
+
+    assert cancel_scope.cancelled_caught is False, \
+            "lobby test took to long"
+    
+
+@pytest.mark.skip
+# type: ignore
 async def test_lobby_groups() -> None:
 
     group_size = 3

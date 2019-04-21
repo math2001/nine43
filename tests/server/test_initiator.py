@@ -6,7 +6,7 @@ import net
 from server.types import Member
 from typings import *
 
-def stream_pair() -> Tuple[net.JSONStream, trio.abc.Stream]:
+def new_half_stream_pair() -> Tuple[net.JSONStream, trio.abc.Stream]:
     left, right = trio.testing.memory_stream_pair()
     client = net.JSONStream(left)
     return client, right
@@ -17,14 +17,14 @@ async def test_username() -> None:
     member_sendch, member_recvch = trio.open_memory_channel[Member](0)
 
     conns = {
-        "slow": stream_pair(),
-        "quick": stream_pair(),
-        "average": stream_pair(),
-        "late": stream_pair(),
-        "average2": stream_pair(),
-        'closing': stream_pair(),
-        'closing2': stream_pair(),
-        'closing3': stream_pair(),
+        "slow": new_half_stream_pair(),
+        "quick": new_half_stream_pair(),
+        "average": new_half_stream_pair(),
+        "late": new_half_stream_pair(),
+        "average2": new_half_stream_pair(),
+        'closing': new_half_stream_pair(),
+        'closing2': new_half_stream_pair(),
+        'closing3': new_half_stream_pair(),
     }
 
     async def got_login_request(client: net.JSONStream) -> None:
