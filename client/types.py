@@ -1,7 +1,10 @@
+import pygame
 import attr
 from typings import *
 
-__all__ = ['Screen', 'Scene']
+__all__ = ['Screen', 'Scene', 'Font']
+
+Font = pygame.freetype.Font
 
 @attr.s(auto_attribs=True)
 class Screen:

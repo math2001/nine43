@@ -1,5 +1,7 @@
 import pygame
+from client.resman import get_font
 from client.types import Scene
+from client.utils import *
 
 class Username(Scene):
 
@@ -7,12 +9,7 @@ class Username(Scene):
         pass
 
     def render(self) -> None:
-        pygame.draw.circle(
-            self.screen.surf,
-            pygame.Color('white'),
-            self.screen.rect.center,
-            250, 1
-        )
+        with fontedit(get_font('FiraMono')) as font:
+            font.render_to(self.screen.surf,
+                self.screen.rect.center, "Hello, world!")
 
-    async def aclose(self) -> None:
-        pass

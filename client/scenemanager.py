@@ -63,6 +63,7 @@ async def manage_scenes(game_nursery: Nursery) -> None:
                     elif e.type == pygame.KEYDOWN and e.key == pygame.K_F2:
                         debug = not debug
 
+                screen.surf.fill(0)
                 scene.update()
                 scene.render()
 
