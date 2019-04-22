@@ -4,7 +4,8 @@
 import pygame
 import pygame.freetype
 from client.types import *
-from typings import *
+
+__all__ = ['get_image', 'get_font']
 
 _resources: Dict[str, Any] = {
     "images": {},
@@ -21,7 +22,7 @@ def get_font(name: str) -> Font:
     if name in _resources['fonts']:
         return _resources['fonts'][name]
 
-    font = pygame.freetype.Font(f'./client/resources/fonts/{name}.ttf', size=20)
+    font = pygame.freetype.Font(f'./client/resources/fonts/{name}.ttf', size=14)
     # some sane defaults
     font.fgcolor = 255, 255, 255
     return font

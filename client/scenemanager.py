@@ -2,9 +2,12 @@ import logging
 import trio
 import pygame
 import pygame.freetype
+from client.resman import get_font
 from client.types import *
+from client.const import *
+from client.utils import *
 from client.scenes.username import Username
-from typings import *
+from client.scenes.connect import Connect
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -17,11 +20,10 @@ def get_screen() -> Screen:
     return Screen(surf, rect)
 
 def show_debug(screen: Screen, scene: Scene, fps: float) -> None:
-    text = f"{Scene!r} | {fps} fps"
-
-def run_scene(scene: Scene, clock: Any) -> bool:
-   
-    return True
+    with fontedit(get_font(MONO)) as font:
+        rect = font.get_rect(f"{scene!r} {fps:.2f} fps")
+        rect.bottomright = screen.rect.bottomright
+        font.render_to(screen.surf, rect, None, bgcolor=pygame.Color('black'))
 
 async def manage_scenes(game_nursery: Nursery) -> None:
 
@@ -34,13 +36,15 @@ async def manage_scenes(game_nursery: Nursery) -> None:
 
     scenes: Dict[str, type] = {
         "username": Username,
+        "connect": Connect,
     }
 
-    scene_name = "username"
+    scene_name = "connect"
 
     clock = pygame.time.Clock()
 
     debug = True
+    kwargs: Dict[str, Any] = {}
 
     going = True
     while going:
@@ -51,17 +55,21 @@ async def manage_scenes(game_nursery: Nursery) -> None:
             if scene_name not in scenes:
                 raise ValueError(f"Unknown scene {scene_name!r}")
 
-            scene = scenes[scene_name](nursery, screen)
+            scene = scenes[scene_name](nursery, screen, **kwargs)
 
             while scene.going:
 
                 for e in pygame.event.get():
+                    if scene.handle_event(e):
+                        continue # event handled
+
                     if e.type == pygame.QUIT:
                         log.info("quiting")
                         scene.close()
                         going = False
                     elif e.type == pygame.KEYDOWN and e.key == pygame.K_F2:
                         debug = not debug
+
 
                 screen.surf.fill(0)
                 scene.update()
@@ -73,9 +81,12 @@ async def manage_scenes(game_nursery: Nursery) -> None:
                 clock.tick(MAX_FPS)
 
                 pygame.display.flip()
-
+                await trio.sleep(0)
 
             if going:
-                scene_name = scene.next_scene_name()
+                scene_name, kwargs = scene.next_scene()
+
+            # scene should be closed in less that 2 seconds
+            nursery.cancel_scope.deadline = trio.current_time() + 2
 
     print("Bye")

@@ -1,10 +1,10 @@
+import abc
 import pygame
 import attr
 from typings import *
 
-__all__ = ['Screen', 'Scene', 'Font']
-
 Font = pygame.freetype.Font
+Event = pygame.event.EventType
 
 @attr.s(auto_attribs=True)
 class Screen:
@@ -12,12 +12,13 @@ class Screen:
     surf: Any
     rect: Any
 
-class Scene:
+class Scene(abc.ABC):
 
     def __init__(self, nursery: Nursery, screen: Screen):
-        self.nursery = nursery
+        self.scene_nursery = nursery
         self.screen = screen
         self.going = True
+        self._state = -1, ""
 
     def update(self) -> None:
         pass
@@ -31,11 +32,23 @@ class Scene:
     def debug_text(self) -> str:
         return ""
 
-    def next_scene_name(self) -> str:
-        return ""
+    @abc.abstractmethod
+    def next_scene(self) -> Tuple[str, Dict[str, Any]]:
+        return "", {}
+
+    def handle_event(self, e: Event) -> bool:
+        return False
 
     def __str__(self) -> str:
         return f"{self.__class__.__name__}()"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.debug_text()})"
+
+    @property
+    def state(self) -> Tuple[int, str]:
+        return self._state
+
+    @state.setter
+    def state(self, val: Tuple[int, str]) -> None:
+        self._state = val

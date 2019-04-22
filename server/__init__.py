@@ -15,7 +15,7 @@ log.setLevel(logging.DEBUG)
 
 PORT = 9999
 SLEEP_TIME = 0.1
-GROUP_SIZE = 2
+stack_SIZE = 2
 
 # straight from trio's source code. The thing is that their default handler
 # closes the connection as soon as the handler is done, which I don't want
@@ -53,20 +53,20 @@ async def accept_conns(port: int, connch: SendCh[trio.abc.Stream]) -> None:
         for ln in listeners:
             nursery.start_soon(_handle_one_listener, nursery, ln, connch)
 
-async def run(port: int) -> None:
+async def run() -> None:
     """ The overarching piece of the server.
 
     It'll manage monitoring it.
 
     network ->  initiator -> lobby -> submanager :: spawns subs -> back to lobby
-         connch        memberch  groupch                     memberch
+         connch        memberch  stackch                     memberch
 
     Note: initiator -> lobby and subs -> lobby isn't the same channel, just a 
     combination of 2 different channels: they are independent.
 
     """
 
-    log.debug("starting server on port %d", port)
+    log.debug("starting server on port %d", PORT)
 
     async with trio.open_nursery() as nursery:
 
@@ -74,12 +74,12 @@ async def run(port: int) -> None:
 
         member_sendch, member_recvch = trio.open_memory_channel[Member](0)
 
-        group_sendch, group_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
+        stack_sendch, stack_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
 
-        nursery.start_soon(accept_conns, port, conn_sendch)
+        nursery.start_soon(accept_conns, PORT, conn_sendch)
 
         nursery.start_soon(initiator.initiator, conn_recvch, member_sendch)
 
-        nursery.start_soon(lobby.lobby, member_recvch, group_sendch, GROUP_SIZE)
+        nursery.start_soon(lobby.lobby, member_recvch, stack_sendch, stack_SIZE)
 
-        nursery.start_soon(submanager.submanager, group_recvch, member_sendch.clone())
+        nursery.start_soon(submanager.submanager, stack_recvch, member_sendch.clone())

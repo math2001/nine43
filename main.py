@@ -1,10 +1,9 @@
 import sys
 import trio
 import logging
-from constants import PORT
 
 logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s %(name)-15s %(message)s',
+    format='%(asctime)s %(levelname)-8s %(name)-25s %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
     level=logging.DEBUG
 )
@@ -20,7 +19,7 @@ if len(sys.argv) != 2:
 def main() -> None:
     if sys.argv[1] == 'server':
         import server
-        trio.run(server.run, PORT)
+        trio.run(server.run)
     elif sys.argv[1] == 'client':
         import client
         trio.run(client.run)

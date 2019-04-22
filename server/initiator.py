@@ -2,7 +2,6 @@ import logging
 import net
 import trio
 from server.types import *
-from typings import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -67,15 +66,14 @@ async def initiate_conn(
             if not username:
                 return log.warning("connection dropped")
 
-
             member = Member(stream, username)
 
             log.debug(f"{username!r} accepted")
 
             await stream.write({"type": "log in update", "state": "accepted"})
 
-        except net.ConnectionClosed:
-            log.exception("connection dropped")
+        except net.ConnectionClosed as e:
+            log.warning("connection dropped", exc_info=e)
 
             # remove username from the list of usernames
             if username is not None:

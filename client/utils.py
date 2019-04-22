@@ -1,9 +1,10 @@
 from contextlib import contextmanager
 from client.types import *
-from typings import *
+
+__all__ = ['fontedit']
 
 @contextmanager
-def fontedit(font: Font, **kwargs: Dict[str, Any]) -> Iterator[Font]:
+def fontedit(font: Font, **kwargs: Any) -> Iterator[Font]:
     """ Applies some settings to a font, and then removes them """
     defaults = {}
     for key in kwargs:
