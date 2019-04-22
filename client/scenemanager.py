@@ -8,6 +8,7 @@ from client.const import *
 from client.utils import *
 from client.scenes.username import Username
 from client.scenes.connect import Connect
+from client.scenes.test import Test
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -37,9 +38,10 @@ async def manage_scenes(game_nursery: Nursery) -> None:
     scenes: Dict[str, type] = {
         "username": Username,
         "connect": Connect,
+        "test": Test,
     }
 
-    scene_name = "connect"
+    scene_name = "test"
 
     clock = pygame.time.Clock()
 
