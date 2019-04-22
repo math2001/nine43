@@ -11,7 +11,8 @@ log.setLevel(logging.DEBUG)
 
 STATE_WAITING_INPUT = 0, "Type your username and press enter!"
 STATE_WAITING = 10, "Waiting for server response..."
-STATE_ACCEPTED = 20, "Going to game!"
+STATE_REFUSED = 20, "Connection refused"
+STATE_ACCEPTED = 30, "Going to game!"
 
 async def submit_username(
     username: str,
@@ -69,7 +70,12 @@ class Username(Scene):
         self.state = STATE_WAITING_INPUT
         self.stream = stream
 
+        self.modal = gui.Modal()
+
     def handle_event(self, e: Event) -> bool:
+        if self.state == STATE_REFUSED:
+            self.modal.handle_event(e)
+
         if self.state[0] != STATE_WAITING_INPUT[0]:
             return False
 
@@ -104,7 +110,7 @@ class Username(Scene):
             self.state = STATE_ACCEPTED
         elif resp['type'] == 'refused':
             # TODO: show popup or something
-            self.state = STATE_WAITING_INPUT
+            self.state = STATE_REFUSED
         elif resp['type'] == 'error':
             # should display error message and all
             raise ValueError(f"Error during Username scene: {resp}")
@@ -114,6 +120,8 @@ class Username(Scene):
     def render(self) -> None:
         # render the username
         start = [self.screen.rect.centerx - 50, self.screen.rect.centery]
+
+        self.modal.render(self.screen)
 
         with fontedit(get_font(MONO), origin=True) as font:
             rect = font.render_to(self.screen.surf, start, self.username)

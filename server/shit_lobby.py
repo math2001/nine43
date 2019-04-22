@@ -19,11 +19,10 @@ Replayer: when you send something through a channel, you *give up its
 import logging
 import trio
 import net
-from server.types import Player, Lockable
-from typings import *
+from server.types import *
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 async def watch_close(
         player: Player,
@@ -66,7 +65,7 @@ async def add_new_players(
         parent: Nursery,
         playerch: RecvCh[Player],
         stacklk: Lockable[List[Player]],
-        groupch: SendCh[Tuple[Player, ...]],
+        groupch: SendCh[Group],
         group_size: int
     ) -> None:
 
@@ -112,12 +111,12 @@ async def add_new_players(
             log.critical(f"Got {len(final_stack)}, should have {group_size}")
 
         log.info(f"sending stack (cancel nursery) {final_stack}")
-        parent.start_soon(groupch.send, final_stack)
+        parent.start_soon(groupch.send, Group(players=final_stack))
         log.debug("stack sent!")
 
 async def lobby(
         playerch: RecvCh[Player],
-        groupch: SendCh[Tuple[Player, ...]],
+        groupch: SendCh[Group],
         group_size: int
     ) -> None:
 

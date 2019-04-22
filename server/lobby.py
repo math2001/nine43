@@ -5,7 +5,6 @@ It would make the main function "sync", and much more maintainable
 
 import logging
 import net  
-from typings import *
 from server.types import *
 
 from .shit_lobby import lobby

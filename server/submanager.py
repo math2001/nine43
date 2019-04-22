@@ -1,6 +1,7 @@
 from server.types import *
 
 async def submanager(
-    stackch: RecvCh[Tuple[Player, ...]],
+    groupch: RecvCh[Group],
     playerch: SendCh[Player]) -> None:
+    
     pass

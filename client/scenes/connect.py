@@ -8,6 +8,37 @@ from client.const import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
+async def open_connection(host: str, port: int, streamch: SendCh[net.JSONStream]) -> None:
+
+    """ open connection with server.
+
+    1. open connection
+    2. send on channel
+    3. wait for 'log in' message from server
+    4. close channel
+    """
+
+    raw = await trio.open_tcp_stream(host, port)
+    stream = net.JSONStream(raw)
+
+    log.info(f"connection open {stream}")
+
+    await streamch.send(stream)
+
+    async def wait_for_login(stream: net.JSONStream) -> None:
+        """ reads until the server says to log in """
+        resp = await stream.read()
+        if resp != {'type': 'log in'}:
+            log.error(f"invalid resp {resp}")
+            await wait_for_login(stream)
+
+    log.debug(f"waiting for 'log in' request {stream}")
+
+    await wait_for_login(stream)
+
+    log.debug(f"closing streamch {stream}")
+    await streamch.aclose()
+
 class Connect(Scene):
 
     """ Connect to the server
@@ -21,26 +52,33 @@ class Connect(Scene):
     def __init__(self, nursery: Nursery, screen: Screen):
         super().__init__(nursery, screen)
 
-        self.scene_nursery.start_soon(self.open_connection)
+        stream_sendch, self.stream_recvch = trio.open_memory_channel[net.JSONStream](0)
+
+        self.scene_nursery.start_soon(
+            open_connection,
+            self.host,
+            self.port,
+            stream_sendch
+        )
+
         self.state = 0, f"Connecting to {self.host}:{self.port}..."
 
-    async def open_connection(self) -> None:
-        raw = await trio.open_tcp_stream(self.host, self.port)
-        # we can overwrite the current state of the object because these are
-        # atomic operations
-        self.stream = net.JSONStream(raw)
+    def update(self) -> None:
+        if self.state[0] == 0:
+            try:
+                self.stream = self.stream_recvch.receive_nowait()
+            except trio.WouldBlock:
+                pass
+            else:
+                self.state = 10, "Waiting for server instructions..."
 
-        self.state = 10, "Waiting for server instructions..."
-
-        async def wait_for_login() -> None:
-            """ reads until the server says to log in """
-            resp = await self.stream.read()
-            if resp != {'type': 'log in'}:
-                log.error(f"invalid resp {resp}")
-                await wait_for_login()
-
-        await wait_for_login()
-        self.going = False
+        elif self.state[0] == 10:
+            try:
+                self.stream = self.stream_recvch.receive_nowait()
+            except trio.WouldBlock:
+                pass
+            except trio.EndOfChannel:
+                self.going = False
 
     def render(self) -> None:
         with fontedit(get_font(MONO)) as font:

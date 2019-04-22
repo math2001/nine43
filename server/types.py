@@ -22,6 +22,20 @@ class Player:
     def __repr__(self) -> str:
         return str(self)
 
+
+class Group:
+
+    def __init__(self, players: Tuple[Player, ...]):
+        self.players = players
+        self.selected_world_name = ""
+
+    def __str__(self) -> str:
+        return repr(self)
+
+    def __repr__(self) -> str:
+        return f"Group({self.selected_world_name!r} {len(self.players)})"
+
+
 class Lockable(Generic[T]):
 
     def __init__(self, val: T):
