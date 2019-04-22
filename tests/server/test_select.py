@@ -4,7 +4,7 @@ import trio.testing
 import net
 import tests
 import server.sub.select as select
-from server.types import Member
+from server.types import Player
 from typings import *
 
 async def _check_votes_result(
@@ -53,12 +53,12 @@ async def _check_conversation(
         votes: Tuple[int, ...]) -> None:
     """ util function for conversation test """
 
-    players: List[Member] = []
+    players: List[Player] = []
     ends: List[net.JSONStream] = []
 
     for i in range(len(votes)):
         left, right = tests.new_stream_pair()
-        players.append(Member(right, string.ascii_letters[i]))
+        players.append(Player(right, string.ascii_letters[i]))
         ends.append(left)
 
     async def sel() -> None:

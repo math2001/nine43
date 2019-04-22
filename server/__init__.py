@@ -7,7 +7,7 @@ import net
 import server.initiator as initiator
 import server.lobby as lobby
 import server.submanager as submanager
-from server.types import Member
+from server.types import Player
 from typings import *
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ async def run() -> None:
     It'll manage monitoring it.
 
     network ->  initiator -> lobby -> submanager :: spawns subs -> back to lobby
-         connch        memberch  stackch                     memberch
+         connch        playerch  stackch                     playerch
 
     Note: initiator -> lobby and subs -> lobby isn't the same channel, just a 
     combination of 2 different channels: they are independent.
@@ -72,14 +72,14 @@ async def run() -> None:
 
         conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
 
-        member_sendch, member_recvch = trio.open_memory_channel[Member](0)
+        player_sendch, player_recvch = trio.open_memory_channel[Player](0)
 
-        stack_sendch, stack_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
+        stack_sendch, stack_recvch = trio.open_memory_channel[Tuple[Player, ...]](0)
 
         nursery.start_soon(accept_conns, PORT, conn_sendch)
 
-        nursery.start_soon(initiator.initiator, conn_recvch, member_sendch)
+        nursery.start_soon(initiator.initiator, conn_recvch, player_sendch)
 
-        nursery.start_soon(lobby.lobby, member_recvch, stack_sendch, stack_SIZE)
+        nursery.start_soon(lobby.lobby, player_recvch, stack_sendch, stack_SIZE)
 
-        nursery.start_soon(submanager.submanager, stack_recvch, member_sendch.clone())
+        nursery.start_soon(submanager.submanager, stack_recvch, player_sendch.clone())

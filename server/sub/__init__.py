@@ -12,7 +12,7 @@ import logging
 import server.lobby as lobby
 import server.sub.select as select
 import server.sub.world as world
-from server.types import Member
+from server.types import Player
 from typings import *
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ def load_worlds_metadata() -> Tuple[Dict[str, str], ...]:
         },
     )
 
-async def new_sub(group: Tuple[Member, ...]) -> None:
+async def new_sub(group: Tuple[Player, ...]) -> None:
     log.info("[sub] select")
     try:
         chosen_world = await select.select(group, load_worlds_metadata())

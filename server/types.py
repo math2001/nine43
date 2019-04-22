@@ -4,7 +4,7 @@ from typings import *
 from utils import truncate_middle
 
 @attr.s(auto_attribs=True, str=False, repr=False)
-class Member:
+class Player:
 
     """ A player waiting in the lobby """
 
@@ -12,12 +12,12 @@ class Member:
     username: str
 
     def __eq__(self, o: Any) -> bool:
-        return isinstance(o, Member) \
+        return isinstance(o, Player) \
             and o.stream is self.stream \
             and o.username == self.username
 
     def __str__(self) -> str:
-        return f"Member({self.username!r}, {truncate_middle(repr(self.stream), 20)})"
+        return f"Player({self.username!r}, {truncate_middle(repr(self.stream), 20)})"
 
     def __repr__(self) -> str:
         return str(self)

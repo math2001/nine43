@@ -3,7 +3,7 @@ import trio
 import trio.testing
 import server.initiator as initiator
 import net
-from server.types import Member
+from server.types import Player
 from typings import *
 
 def new_half_stream_pair() -> Tuple[net.JSONStream, trio.abc.Stream]:
@@ -14,7 +14,7 @@ def new_half_stream_pair() -> Tuple[net.JSONStream, trio.abc.Stream]:
 async def test_username() -> None:
 
     conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
-    member_sendch, member_recvch = trio.open_memory_channel[Member](0)
+    player_sendch, player_recvch = trio.open_memory_channel[Player](0)
 
     conns = {
         "slow": new_half_stream_pair(),
@@ -136,13 +136,13 @@ async def test_username() -> None:
             await client.write({"type": "log in", "username": "closing"})
             await client.aclose()
 
-    async def get_members(memberch: RecvCh[Member]) -> None:
+    async def get_players(playerch: RecvCh[Player]) -> None:
         order = ['quick', 'average', 'slow', 'late', 'average2', 'closing']
 
         i = 0
-        async for member in memberch:
-            assert member.username == order[i]
-            assert member.stream == net.JSONStream(conns[order[i]][1]), \
+        async for player in playerch:
+            assert player.username == order[i]
+            assert player.stream == net.JSONStream(conns[order[i]][1]), \
                     f"{order[i]!r} stream differs"
             i += 1
 
@@ -162,18 +162,18 @@ async def test_username() -> None:
 
     async def monitor(
             connch: SendCh[trio.abc.Stream],
-            memberch: RecvCh[Member]) -> None:
+            playerch: RecvCh[Player]) -> None:
 
         seq = trio.testing.Sequencer()
 
         async with trio.open_nursery() as nursery:
             nursery.start_soon(wait_for_all_clients, connch, seq)
-            nursery.start_soon(get_members, memberch)
+            nursery.start_soon(get_players, playerch)
 
     with trio.move_on_after(2) as cancel_scope:
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(initiator.initiator, conn_recvch, member_sendch)
-            nursery.start_soon(monitor, conn_sendch, member_recvch)
+            nursery.start_soon(initiator.initiator, conn_recvch, player_sendch)
+            nursery.start_soon(monitor, conn_sendch, player_recvch)
 
     assert cancel_scope.cancelled_caught is False, \
             "initator and/or monitor took too long to finish"

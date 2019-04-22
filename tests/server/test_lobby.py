@@ -14,9 +14,9 @@ import server.lobby as lobby
 from typings import *
 from server.types import *
 
-def new_stream_member(username: str) -> Tuple[Member, Member]:
+def new_stream_player(username: str) -> Tuple[Player, Player]:
     left, right = trio.testing.memory_stream_pair()
-    return Member(net.JSONStream(left), username), Member(net.JSONStream(right), username)
+    return Player(net.JSONStream(left), username), Player(net.JSONStream(right), username)
 
 async def test_lobby() -> None:
     """ integration test
@@ -34,44 +34,44 @@ async def test_lobby() -> None:
     # send user H
     # check on group_recvch (should have (E, G, H))
     # send user i
-    # close memberch
+    # close playerch
     # ensure user I get's closed nicely (how?)
     """
 
 
-    member_sendch, member_recvch = trio.open_memory_channel[Member](0)
-    group_sendch, group_recvch = trio.open_memory_channel[Tuple[Member, ...]](0)
+    player_sendch, player_recvch = trio.open_memory_channel[Player](0)
+    group_sendch, group_recvch = trio.open_memory_channel[Tuple[Player, ...]](0)
 
     async def send(
-            client_end: Member,
-            member: Member,
-            memberch: SendCh[Member],
+            client_end: Player,
+            player: Player,
+            playerch: SendCh[Player],
         ) -> None:
         with trio.move_on_after(1) as cancel_scope:
-            await memberch.send(member)
+            await playerch.send(player)
             assert await client_end.stream.read() == {"type": "lobby", "message": "welcome"}
 
         assert cancel_scope.cancelled_caught is False, \
-                f"lobby welcome message took to long for {member}"
+                f"lobby welcome message took to long for {player}"
 
 
     groups_event = trio.Event()
-    groups: List[Tuple[Member, ...]] = []
+    groups: List[Tuple[Player, ...]] = []
 
     async def send_sequence(
-            memberch: SendCh[Member],
+            playerch: SendCh[Player],
             seq: trio.testing.Sequencer
         ) -> None:
 
-        a_left, a_right = new_stream_member(username="a")
-        b_left, b_right = new_stream_member(username="b")
-        c_left, c_right = new_stream_member(username="c")
-        d_left, d_right = new_stream_member(username="d")
-        e_left, e_right = new_stream_member(username="e")
-        f_left, f_right = new_stream_member(username="f")
-        g_left, g_right = new_stream_member(username="g")
-        h_left, h_right = new_stream_member(username="h")
-        i_left, i_right = new_stream_member(username="i")
+        a_left, a_right = new_stream_player(username="a")
+        b_left, b_right = new_stream_player(username="b")
+        c_left, c_right = new_stream_player(username="c")
+        d_left, d_right = new_stream_player(username="d")
+        e_left, e_right = new_stream_player(username="e")
+        f_left, f_right = new_stream_player(username="f")
+        g_left, g_right = new_stream_player(username="g")
+        h_left, h_right = new_stream_player(username="h")
+        i_left, i_right = new_stream_player(username="i")
 
 
         groups.append((b_right, c_right, d_right))
@@ -80,26 +80,26 @@ async def test_lobby() -> None:
         groups_event.set()
 
         async with seq(0):
-            await send(a_left, a_right, memberch)
-            await send(b_left, b_right, memberch)
+            await send(a_left, a_right, playerch)
+            await send(b_left, b_right, playerch)
             await a_left.stream.aclose()
-            await send(c_left, c_right, memberch)
-            await send(d_left, d_right, memberch)
+            await send(c_left, c_right, playerch)
+            await send(d_left, d_right, playerch)
 
-            await send(e_left, e_right, memberch)
+            await send(e_left, e_right, playerch)
 
         async with seq(2):
-            await send(f_left, f_right, memberch)
+            await send(f_left, f_right, playerch)
             await f_left.stream.aclose()
-            await send(g_left, g_right, memberch)
-            await send(h_left, h_right, memberch)
-            await send(i_left, i_right, memberch)
+            await send(g_left, g_right, playerch)
+            await send(h_left, h_right, playerch)
+            await send(i_left, i_right, playerch)
 
         async with seq(4):
-            await memberch.aclose()
+            await playerch.aclose()
 
     async def check_groupch(
-            groupch: RecvCh[Tuple[Member, ...]],
+            groupch: RecvCh[Tuple[Player, ...]],
             seq: trio.testing.Sequencer
         ) -> None:
 
@@ -127,34 +127,34 @@ async def test_lobby() -> None:
 
 
     async def monitor(
-            memberch: SendCh[Member],
-            groupch: RecvCh[Tuple[Member, ...]]
+            playerch: SendCh[Player],
+            groupch: RecvCh[Tuple[Player, ...]]
         ) -> None:
 
         # right is the part that is send to the server, and left the part that
         # is acting as the client.
         seq = trio.testing.Sequencer()
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(send_sequence, member_sendch, seq)
+            nursery.start_soon(send_sequence, player_sendch, seq)
             nursery.start_soon(check_groupch, groupch, seq)
 
     with trio.move_on_after(3) as cancel_scope:
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(monitor, member_sendch, group_recvch)
-            nursery.start_soon(lobby.lobby, member_recvch, group_sendch, 3)
+            nursery.start_soon(monitor, player_sendch, group_recvch)
+            nursery.start_soon(lobby.lobby, player_recvch, group_sendch, 3)
 
 
     assert cancel_scope.cancelled_caught is False, \
             "lobby test took to long"
     
 async def test_watch_close() -> None:
-    left, right = new_stream_member(username='a')
-    sendch, recvch = trio.open_memory_channel[Member](0)
+    left, right = new_stream_player(username='a')
+    sendch, recvch = trio.open_memory_channel[Player](0)
 
     async def monitor(
-            client_end: Member,
-            server_end: Member,
-            ch: RecvCh[Member]
+            client_end: Player,
+            server_end: Player,
+            ch: RecvCh[Player]
         ) -> None:
 
         with pytest.raises(trio.WouldBlock):

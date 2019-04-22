@@ -42,7 +42,7 @@ async def get_username(
 
 async def initiate_conn(
         rawstream: trio.abc.Stream,
-        memberch: SendCh[Member],
+        playerch: SendCh[Player],
         usernameslk: Lockable[List[str]]
     ) -> None:
 
@@ -66,7 +66,7 @@ async def initiate_conn(
             if not username:
                 return log.warning("connection dropped")
 
-            member = Member(stream, username)
+            player = Player(stream, username)
 
             log.debug(f"{username!r} accepted")
 
@@ -84,31 +84,31 @@ async def initiate_conn(
                         pass
             return
 
-        log.info("conn initialized %s", member)
+        log.info("conn initialized %s", player)
 
 
     if cancel_scope.cancelled_caught:
         return log.warning("initiating conn: dropping after timeout %s", stream)
 
     # copy the username, because once it's sent on the channel, I shouldn't
-    # access member
-    username = member.username
-    await memberch.send(member)
-    log.info("member '%s' sent", username)
+    # access player
+    username = player.username
+    await playerch.send(player)
+    log.info("player '%s' sent", username)
 
 async def initiator(
         connch: RecvCh[trio.abc.Stream],
-        memberch: SendCh[Member]
+        playerch: SendCh[Player]
     ) -> None:
 
     log.info("initiator started")
 
     usernameslk = Lockable[List[str]]([])
 
-    async with memberch:
+    async with playerch:
         async with trio.open_nursery() as nursery:
             async for conn in connch:
-                nursery.start_soon(initiate_conn, conn, memberch, usernameslk)
+                nursery.start_soon(initiate_conn, conn, playerch, usernameslk)
 
             log.debug("connch closed. %d tasks left in nursery",
                 len(nursery.child_tasks))

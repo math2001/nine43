@@ -14,25 +14,25 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 async def watch_close(
-        member: Member,
-        member_leftch: SendCh[Member]
+        player: Player,
+        player_leftch: SendCh[Player]
     ) -> None:
-    """ sends member on member_leftch as soon as its stream is closed
+    """ sends player on player_leftch as soon as its stream is closed
 
     The only way to check if a TCP connection closed by the other end is to
     read from it, and check for errors.
 
     This doesn't consume any message because it is cancelled before it gets a
-    chance to read anything (this is managed by the function add_new_members)
+    chance to read anything (this is managed by the function add_new_players)
 
     Therefore: this only works if NO MESSAGE IS BEING SENT TO THE STREAM
     """
-    log.debug(f"watching connection close {member}")
+    log.debug(f"watching connection close {player}")
     try:
-        msg = await member.stream.read()
+        msg = await player.stream.read()
     except net.ConnectionClosed:
-        log.warning(f"{member} left the lobby")
-        await member_leftch.send(member)
+        log.warning(f"{player} left the lobby")
+        await player_leftch.send(player)
         return
 
     log.error(f"recieved message while watching close: {msg}")
@@ -70,14 +70,14 @@ async def select(a: RecvCh[T], b: RecvCh[T]) -> Tuple[T, RecvCh[T], bool]:
     return result, channel, still_open # type: ignore
 
 # async def lobby(
-#         memberch: RecvCh[Member],
-#         stackch: SendCh[Tuple[Member, ...]],
+#         playerch: RecvCh[Player],
+#         stackch: SendCh[Tuple[Player, ...]],
 #         stack_size: int
 #     ) -> None:
 
 #     async with trio.open_nursery() as parent:
-#         # read from member_leftch
-#         # if he left: add to member_left list
-#         # read from new_memberch
-#         # if there is a new one: add to new_member
+#         # read from player_leftch
+#         # if he left: add to player_left list
+#         # read from new_playerch
+#         # if there is a new one: add to new_player
 #         pass
