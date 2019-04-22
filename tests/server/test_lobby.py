@@ -79,21 +79,24 @@ async def test_lobby() -> None:
         groups.append((i_left, ))
         groups_event.set()
 
-        await send(a_left, a_right, memberch)
-        await send(b_left, b_right, memberch)
-        await a_left.stream.aclose()
-        await send(c_left, c_right, memberch)
-        await send(d_left, d_right, memberch)
+        async with seq(0):
+            await send(a_left, a_right, memberch)
+            await send(b_left, b_right, memberch)
+            await a_left.stream.aclose()
+            await send(c_left, c_right, memberch)
+            await send(d_left, d_right, memberch)
 
-        await send(e_left, e_right, memberch)
-        await send(f_left, f_right, memberch)
-        await f_left.stream.aclose()
-        await send(g_left, g_right, memberch)
+            await send(e_left, e_right, memberch)
 
-        await send(h_left, h_right, memberch)
-        await send(i_left, i_right, memberch)
+        async with seq(2):
+            await send(f_left, f_right, memberch)
+            await f_left.stream.aclose()
+            await send(g_left, g_right, memberch)
+            await send(h_left, h_right, memberch)
+            await send(i_left, i_right, memberch)
 
-        await memberch.aclose()
+        async with seq(4):
+            await memberch.aclose()
 
     async def check_groupch(
             groupch: RecvCh[Tuple[Member, ...]],
@@ -105,19 +108,22 @@ async def test_lobby() -> None:
         second = groups[1]
         i_left = groups[2][0]
 
-        assert await groupch.receive() == groups[0]
-        assert await groupch.receive() == groups[1]
+        async with seq(1):
+            assert await groupch.receive() == groups[0]
 
-        with pytest.raises(trio.EndOfChannel):
-            resp = await groupch.receive()
-            assert False, \
-                f"read from groupch returned {resp!r}, should raise trio.EndOfChannel"
+        async with seq(3):
+            assert await groupch.receive() == groups[1]
 
+        async with seq(5):
+            with pytest.raises(trio.EndOfChannel):
+                resp = await groupch.receive()
+                assert False, \
+                    f"read from groupch returned {resp!r}, should raise trio.EndOfChannel"
 
-        with pytest.raises(net.ConnectionClosed):
-            msg = await i_left.stream.read()
-            assert False, \
-                f"read returned message: {msg!r}. Should have raised net.ConnectionClosed"
+            with pytest.raises(net.ConnectionClosed):
+                msg = await i_left.stream.read()
+                assert False, \
+                    f"read returned message: {msg!r}. Should have raised net.ConnectionClosed"
 
 
     async def monitor(
