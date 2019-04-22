@@ -27,7 +27,12 @@ class Scene(abc.ABC):
         pass
 
     def close(self) -> None:
+        """ close current scene to let others run """
         self.going = False
+
+    @abc.abstractmethod
+    def finish(self) -> None:
+        """ gracefully close *everything* because the app is closing """
 
     def debug_text(self) -> str:
         return ""

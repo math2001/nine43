@@ -132,3 +132,6 @@ class Username(Scene):
 
     def next_scene(self) -> Tuple[str, Dict[str, Any]]:
         return 'lobby', {'stream': self.stream}
+
+    def finish(self) -> None:
+        self.scene_nursery.start_soon(self.stream.aclose)

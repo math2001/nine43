@@ -22,7 +22,7 @@ class Connect(Scene):
         super().__init__(nursery, screen)
 
         self.scene_nursery.start_soon(self.open_connection)
-        self.state = f"Connecting to {self.host}:{self.port}..."
+        self.state = 0, f"Connecting to {self.host}:{self.port}..."
 
     async def open_connection(self) -> None:
         raw = await trio.open_tcp_stream(self.host, self.port)
@@ -30,7 +30,7 @@ class Connect(Scene):
         # atomic operations
         self.stream = net.JSONStream(raw)
 
-        self.state = "Waiting for server instructions..."
+        self.state = 10, "Waiting for server instructions..."
 
         async def wait_for_login() -> None:
             """ reads until the server says to log in """
@@ -44,9 +44,14 @@ class Connect(Scene):
 
     def render(self) -> None:
         with fontedit(get_font(MONO)) as font:
-            rect = font.get_rect(self.state)
+            rect = font.get_rect(self.state[1])
             rect.center = self.screen.rect.center
             font.render_to(self.screen.surf, rect, None)
 
     def next_scene(self) -> Tuple[str, Dict[str, Any]]:
         return 'username', {'stream': self.stream}
+
+    def finish(self) -> None:
+        if self.state[0] >= 10:
+            # we have a stream open
+            self.scene_nursery.start_soon(self.stream.aclose)

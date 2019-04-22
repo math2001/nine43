@@ -66,10 +66,10 @@ async def manage_scenes(game_nursery: Nursery) -> None:
                     if e.type == pygame.QUIT:
                         log.info("quiting")
                         scene.close()
+                        scene.finish()
                         going = False
                     elif e.type == pygame.KEYDOWN and e.key == pygame.K_F2:
                         debug = not debug
-
 
                 screen.surf.fill(0)
                 scene.update()
@@ -84,6 +84,7 @@ async def manage_scenes(game_nursery: Nursery) -> None:
                 await trio.sleep(0)
 
             if going:
+                scene.close()
                 scene_name, kwargs = scene.next_scene()
 
             # scene should be closed in less that 2 seconds
