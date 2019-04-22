@@ -38,5 +38,3 @@ async def new_sub(group: Tuple[Member, ...]) -> None:
 
     log.info("[sub] fin")
     await fin.fin(group, result)
-
-    # TODO: loop back, but change lobby first (see note at the top of lobby.py)

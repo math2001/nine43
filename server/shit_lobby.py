@@ -96,8 +96,7 @@ async def add_new_members(
                 async with stacklk as stack:
                     log.info(f"add {member} to the stack")
                     stack.append(member)
-                    # TODO: move into an extra nursery (not the existing
-                    # one because it gets canceled)
+
                     parent.start_soon(member.stream.write, {"type": "lobby", "message": "welcome"})
                     nursery.start_soon(watch_close, member, member_left_sendch)
                     if len(stack) == group_size:

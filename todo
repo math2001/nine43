@@ -2,6 +2,10 @@
 - let's play with ci!!
 - build better trio.Sequence
 - initiator test make more clean
+- the whole server should know when a connection is dropped, so that it can
+  reuse the username
+- implement monitoring protocol with the server (just ping and spit out JSON)
+- loop back to lobby once the sub is done
 
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
