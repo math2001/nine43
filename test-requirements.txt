@@ -34,7 +34,7 @@ ipython-genutils==0.2.0
 ipywidgets==7.4.2
 itsdangerous==1.1.0
 jedi==0.13.1
-Jinja2==2.10
+Jinja2>=2.10.1
 jsonschema==2.6.0
 jupyter==1.0.0
 jupyter-client==5.2.3
@@ -63,7 +63,7 @@ mypy==0.701
 mypy-extensions==0.4.1
 nbconvert==5.4.0
 nbformat==4.4.0
-notebook==5.7.0
+notebook>=5.7.8
 numpy==1.15.3
 outcome==1.0.0
 pandocfilters==1.4.2
@@ -89,14 +89,14 @@ pytest-trio==0.5.2
 python-dateutil==2.7.5
 pytoml==0.1.20
 pywinpty==0.5.4
-PyYAML==3.13
+pyyaml>=4.2b1
 pyzmq==17.1.2
 qtconsole==4.4.2
 Quart==0.8.1
 Quart-CORS==0.1.2
 Quart-Trio==0.2.0
 reportlab==3.5.9
-requests==2.19.1
+requests>=2.20.0
 Send2Trash==1.5.0
 six==1.12.0
 sniffio==1.1.0
@@ -114,7 +114,7 @@ trio==0.11.0
 trio-typing==0.2.0
 typed-ast==1.3.4
 typing-extensions==3.7.2
-urllib3==1.23
+urllib3>=1.24.2
 virtualenv==16.4.3
 virtualenv-clone==0.5.1
 wcwidth==0.1.7
