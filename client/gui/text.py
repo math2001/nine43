@@ -11,7 +11,7 @@ def split_words(text: str) -> List[str]:
     words: List[str] = []
     for i, line in enumerate(lines):
         words += line.split(' ')
-        if i < len(lines):
+        if i < len(lines) - 1:
             words.append('\n')
 
     return words
@@ -32,12 +32,13 @@ def height(font: Font, width: int, text: str) -> int:
             bounds = font.get_rect(word)
 
             if x + bounds.x + bounds.width >= width:
+                print('new line')
                 x, y = 0, y + line_height
 
             if x + bounds.x + bounds.width >= width:
                 raise ValueError(f"word {word!r} too long for width {width}")
 
-            x += bounds.x + space.width
+            x += bounds.x + bounds.width + space.width
 
     # for some reason, get_sized_descender returns a negative number
     # add some extra to y so that we can see what's bellow the baseline on 
@@ -61,13 +62,13 @@ def render(surf: pygame.Surface, font: Font, text: str) -> None:
             bounds = font.get_rect(word)
 
             if x + bounds.x + bounds.width >= width:
-                x, y = 0, y + line_height * 2
+                x, y = 0, y + line_height
 
             if x + bounds.x + bounds.width >= width:
                 raise ValueError(f"word {word!r} too long for width {width}")
 
-            if y - bounds.y + bounds.height >= height:
-                raise ValueError(f"text {text!r} too long for height {height}")
+            # if y - bounds.y + bounds.height >= height:
+            #     raise ValueError(f"text {text!r} too long for height {height}")
 
             font.render_to(surf, (x, y), word, pygame.Color('white'))
-            x += bounds.width + space.width
+            x += bounds.x + bounds.width + space.width

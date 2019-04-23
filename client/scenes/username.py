@@ -1,6 +1,7 @@
 import logging
 import pygame
 import net
+import client.gui as gui
 from client.resman import *
 from client.types import *
 from client.utils import *
@@ -29,6 +30,7 @@ async def submit_username(
     """
 
     # TODO: retry if it's only a temporary error
+    return await sendch.send({"type": "error", "message": "some fucking error asdfl;hwqepda fewhdsaihaka oji fewoihwf ofroij gaoijfgoijhufg gd h;ofgoihfdoihfd"})
 
     try:
         await stream.write({"type": "log in", "username": username})
@@ -70,11 +72,18 @@ class Username(Scene):
         self.state = STATE_WAITING_INPUT
         self.stream = stream
 
-        self.modal = gui.Modal()
+        self.modal = gui.Modal(
+            title="Error",
+            content=f"Internal error. Please report at {ISSUES}",
+            ok="OK",
+            on_ok=self.hide_modal,
+            width=450)
+
+    def hide_modal(self) -> None:
+        self.modal.visible = False
 
     def handle_event(self, e: Event) -> bool:
-        if self.state == STATE_REFUSED:
-            self.modal.handle_event(e)
+        self.modal.handle_event(e)
 
         if self.state[0] != STATE_WAITING_INPUT[0]:
             return False
@@ -112,16 +121,25 @@ class Username(Scene):
             # TODO: show popup or something
             self.state = STATE_REFUSED
         elif resp['type'] == 'error':
-            # should display error message and all
-            raise ValueError(f"Error during Username scene: {resp}")
+            log.error(f"Errored while sending username {resp}")
+            msg = f"Errored while sending username: \n{resp['message']}\n" \
+                  f"Please report at {ISSUES}"
+            self.modal.alter(content=msg)
+            self.modal.rect.center = self.screen.rect.center
+            self.modal.visible = True
+            self.modal.moved()
         else:
-            raise ValueError(f"Invalid response type: {resp}")
+            log.error(f"Unknown behaviour while sending username {resp}")
+            msg = f"Unknown behaviour while sending username: \n\n{resp}\n\n" \
+                  f"Please report at {ISSUES}"
+            self.modal.alter(content=msg)
+            self.modal.rect.center = self.screen.rect.center
+            self.modal.visible = True
+            self.modal.moved()
 
     def render(self) -> None:
         # render the username
         start = [self.screen.rect.centerx - 50, self.screen.rect.centery]
-
-        self.modal.render(self.screen)
 
         with fontedit(get_font(MONO), origin=True) as font:
             rect = font.render_to(self.screen.surf, start, self.username)
@@ -137,6 +155,9 @@ class Username(Scene):
             rect.midbottom = self.screen.rect.midbottom
             rect.top -= 20
             font.render_to(self.screen.surf, rect, None)
+
+        self.modal.render(self.screen)
+
 
     def next_scene(self) -> Tuple[str, Dict[str, Any]]:
         return 'lobby', {'stream': self.stream}

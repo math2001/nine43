@@ -13,7 +13,7 @@ class Modal(GuiItem):
         self._on_ok = on_ok
 
         self._btn_ok = Button(ok, self._on_ok)
-        self.alter(title, content, width)
+        self.alter(title, content, width, ok)
 
         self.visible = False
 
@@ -42,9 +42,9 @@ class Modal(GuiItem):
         prev_center: Optional[Tuple[int, int]] = None
 
         with fontedit(get_font(MONO), strong=True) as font:
-            title_height = text.height(font, self._width - 20, title)
+            title_height = text.height(font, self._width - 20, self._title)
             self._title_surf = pygame.Surface((self._width - 20, title_height))
-            text.render(self._title_surf, font, title)
+            text.render(self._title_surf, font, self._title)
 
         with fontedit(get_font(MONO)) as font:
             content_height = text.height(font, self._width - 20, self._content)
@@ -54,7 +54,7 @@ class Modal(GuiItem):
         self.rect = pygame.Rect(0, 0, self._width,
             title_height + content_height + self._btn_ok.rect.height + 30)
 
-        self._btn_ok.alter(ok)
+        self._btn_ok.alter(self._ok)
 
         self.moved()
 
@@ -62,13 +62,10 @@ class Modal(GuiItem):
         if not self.visible:
             return False
 
-        if self._btn_ok.handle_event(e):
-            return True
+        self._btn_ok.handle_event(e)
 
-        if e.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP] \
-            and self.rect.collidepoint(e.pos):
-            return True
-        return False
+        # capture every single event
+        return True
 
     def render(self, screen: Screen) -> None:
         if not self.visible:
@@ -83,6 +80,10 @@ class Modal(GuiItem):
             self.rect.top + 10))
         r2 = screen.surf.blit(self._content_surf, (self.rect.left + 10,
             self.rect.top + 10 + self._title_surf.get_height()))
+
+        if DEBUG:
+            pygame.draw.rect(screen.surf, pygame.Color('red'), r1, 1)
+            pygame.draw.rect(screen.surf, pygame.Color('red'), r2, 1)
 
         self._btn_ok.render(screen)
 

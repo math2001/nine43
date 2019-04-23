@@ -4,6 +4,7 @@ from client.types import *
 NORMAL = 'normal'
 HOVER = 'hover'
 CLICKED = 'clicked'
+DEBUG = True
 
 class GuiItem(abc.ABC):
 
