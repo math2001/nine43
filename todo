@@ -13,6 +13,7 @@
 - test client scenes by looking at the state
 - use pdata across scenes
 - send information to client during the lobby
+- git hook on commit
 
 DONE show error messages @ username
 DONE fix modal prevents quit

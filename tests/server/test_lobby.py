@@ -40,6 +40,7 @@ async def test_lobby() -> None:
 
     player_sendch, player_recvch = trio.open_memory_channel[Player](0)
     group_sendch, group_recvch = trio.open_memory_channel[Group](0)
+    quit_sendch, quit_recvch = trio.open_memory_channel[Any](0)
 
     async def send(
             client_end: Player,
@@ -59,7 +60,8 @@ async def test_lobby() -> None:
 
     async def send_sequence(
             playerch: SendCh[Player],
-            seq: trio.testing.Sequencer
+            seq: trio.testing.Sequencer,
+            quitch: RecvCh[Player],
         ) -> None:
 
         a_left, a_right = new_stream_player(username="a")
@@ -82,6 +84,7 @@ async def test_lobby() -> None:
             await send(a_left, a_right, playerch)
             await send(b_left, b_right, playerch)
             await a_left.stream.aclose()
+            assert await quitch.receive() == a_right
             await send(c_left, c_right, playerch)
             await send(d_left, d_right, playerch)
 
@@ -90,16 +93,18 @@ async def test_lobby() -> None:
         async with seq(2):
             await send(f_left, f_right, playerch)
             await f_left.stream.aclose()
+            assert await quitch.receive() == f_right
             await send(g_left, g_right, playerch)
             await send(h_left, h_right, playerch)
             await send(i_left, i_right, playerch)
 
         async with seq(4):
             await playerch.aclose()
+            print('closed channel')
 
     async def check_groupch(
             groupch: RecvCh[Group],
-            seq: trio.testing.Sequencer
+            seq: trio.testing.Sequencer,
         ) -> None:
 
         await groups_event.wait()
@@ -112,6 +117,7 @@ async def test_lobby() -> None:
 
         async with seq(3):
             assert await groupch.receive() == groups[1]
+            print('recieved')
 
         async with seq(5):
             with pytest.raises(trio.EndOfChannel):
@@ -125,22 +131,18 @@ async def test_lobby() -> None:
                     f"read returned message: {msg!r}. Should have raised net.ConnectionClosed"
 
 
-    async def monitor(
-            playerch: SendCh[Player],
-            groupch: RecvCh[Group]
-        ) -> None:
-
-        # right is the part that is send to the server, and left the part that
-        # is acting as the client.
-        seq = trio.testing.Sequencer()
-        async with trio.open_nursery() as nursery:
-            nursery.start_soon(send_sequence, player_sendch, seq)
-            nursery.start_soon(check_groupch, groupch, seq)
+    seq = trio.testing.Sequencer()
 
     with trio.move_on_after(3) as cancel_scope:
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(monitor, player_sendch, group_recvch)
-            nursery.start_soon(lobby.lobby, player_recvch, group_sendch, 3)
+            nursery.start_soon(send_sequence, player_sendch, seq, quit_recvch)
+            nursery.start_soon(check_groupch, group_recvch, seq)
+
+            nursery.start_soon(
+                lobby.lobby,
+                player_recvch,
+                group_sendch,
+                3, quit_sendch)
 
 
     assert cancel_scope.cancelled_caught is False, \

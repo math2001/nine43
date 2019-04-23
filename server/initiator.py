@@ -97,7 +97,8 @@ async def initiate_conn(
 
 async def initiator(
         connch: RecvCh[trio.abc.Stream],
-        playerch: SendCh[Player]
+        playerch: SendCh[Player],
+        quitch: RecvCh[Player],
     ) -> None:
 
     log.info("initiator started")

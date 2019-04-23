@@ -79,20 +79,25 @@ class JSONStream:
 
     async def aclose(self) -> None:
         log.info(f"closing stream {self}")
-        with trio.move_on_after(1) as cancel_scope:
+        acquired = 0
+        with trio.move_on_after(2) as cancel_scope:
             await self._write_cap.acquire()
             log.debug("Got write semaphore")
+            acquired += 1
             await self._read_cap.acquire()
             log.debug("Got read semaphore")
+            acquired += 1
 
         if cancel_scope.cancelled_caught:
-            log.warning("Forcefully closing stream after 1 second, "
-                        "semaphore weren't acquired")
+            log.warning("Forcefully closing stream after 2 seconds, "
+                        f"{acquired} semaphore(s) acquired")
 
         await self._stream.aclose()
         log.debug('Stream closed, releasing semaphores')
-        self._write_cap.release()
-        self._read_cap.release()
+        if acquired >= 1:
+            self._write_cap.release()
+        if acquired >= 2:
+            self._read_cap.release()
 
     def __str__(self) -> str:
         return f"JSONStream({truncate_middle(repr(self._stream), 20)})"
