@@ -13,20 +13,7 @@ class Modal(GuiItem):
         self._on_ok = on_ok
 
         self._btn_ok = Button(ok, self._on_ok)
-        self._width = width
-
-        with fontedit(get_font(MONO), strong=True) as font:
-            title_height = text.height(font, width - 20, title)
-            self._title_surf = pygame.Surface((width - 20, title_height))
-            text.render(self._title_surf, font, title)
-
-        with fontedit(get_font(MONO)) as font:
-            content_height = text.height(font, width - 20, content)
-            self._content_surf = pygame.Surface((width - 20, content_height))
-            text.render(self._content_surf, font, content)
-
-        self.rect = pygame.Rect(0, 0, width,
-            title_height + content_height + self._btn_ok.rect.height + 30)
+        self.alter(title, content, width)
 
         self.visible = False
 
@@ -38,11 +25,49 @@ class Modal(GuiItem):
         self._btn_ok.rect.bottom -= 10
         self._btn_ok.rect.left -= 10
 
+    def alter(self,
+        title: str="",
+        content: str="",
+        width: int=0,
+        ok: str="") -> None:
+        if title:
+            self._title = title
+        if content:
+            self._content = content
+        if width:
+            self._width = width
+        if ok:
+            self._ok = ok
+
+        prev_center: Optional[Tuple[int, int]] = None
+
+        with fontedit(get_font(MONO), strong=True) as font:
+            title_height = text.height(font, self._width - 20, title)
+            self._title_surf = pygame.Surface((self._width - 20, title_height))
+            text.render(self._title_surf, font, title)
+
+        with fontedit(get_font(MONO)) as font:
+            content_height = text.height(font, self._width - 20, self._content)
+            self._content_surf = pygame.Surface((self._width - 20, content_height))
+            text.render(self._content_surf, font, self._content)
+
+        self.rect = pygame.Rect(0, 0, self._width,
+            title_height + content_height + self._btn_ok.rect.height + 30)
+
+        self._btn_ok.alter(ok)
+
+        self.moved()
+
     def handle_event(self, e: Event) -> bool:
         if not self.visible:
             return False
 
-        self._btn_ok.handle_event(e)
+        if self._btn_ok.handle_event(e):
+            return True
+
+        if e.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP] \
+            and self.rect.collidepoint(e.pos):
+            return True
         return False
 
     def render(self, screen: Screen) -> None:

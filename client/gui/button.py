@@ -7,9 +7,8 @@ class Button(GuiItem):
 
     def __init__(self, text: str, on_click: Callable[[], None]) -> None:
         self._state = NORMAL
-        self._text = text
-        self.rect = get_font(MONO).get_rect(self._text).inflate((20, 20))
         self.on_click = on_click
+        self.alter(text)
 
     def handle_event(self, event: Event) -> bool:
         if event.type == pygame.MOUSEMOTION:
@@ -26,7 +25,6 @@ class Button(GuiItem):
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.rect.collidepoint(event.pos):
                 self._state = HOVER
-                self.on_click()
                 return True
             self._state = NORMAL
         return False
@@ -42,3 +40,10 @@ class Button(GuiItem):
             elif self._state in (HOVER, CLICKED):
                 pygame.draw.rect(screen.surf,
                     pygame.Color("white"), self.rect, 2)
+
+
+    def alter(self, text: str="") -> None:
+        if text:
+            self._text = text
+
+        self.rect = get_font(MONO).get_rect(self._text).inflate((20, 20))
