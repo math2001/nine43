@@ -1,7 +1,11 @@
+import logging
 import abc
 import pygame
 import attr
 from typings import *
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 Font = pygame.freetype.Font
 Event = pygame.event.EventType
@@ -57,3 +61,4 @@ class Scene(abc.ABC):
     @state.setter
     def state(self, val: Tuple[int, str]) -> None:
         self._state = val
+        log.info(f"[{self.__class__.__name__}] {self._state[0]} {self._state[1]}")

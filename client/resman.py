@@ -33,6 +33,9 @@ def fontedit(fontname: Union[str, Font], **kwargs: Any) -> Iterator[Font]:
     """ Applies some settings to a font, and then removes them """
     if isinstance(fontname, str):
         font = get_font(fontname)
+    else:
+        font = fontname
+
     defaults = {}
     for key in kwargs:
         try:

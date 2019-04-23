@@ -10,9 +10,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 STATE_WAITING_INPUT = 0, "Type your username and press enter!"
-STATE_WAITING = 10, "Waiting for server response..."
+STATE_WAITING_SERVER = 10, "Waiting for server response..."
 STATE_REFUSED = 20, "Connection refused"
-STATE_ACCEPTED = 30, "Going to game!"
+STATE_ACCEPTED = 30, "Going to lobby!"
 
 async def submit_username(
     username: str,
@@ -98,8 +98,7 @@ class Username(Scene):
 
             self.scene_nursery.start_soon(submit_username, self.username,
                                           self.stream, self.resp_sendch)
-            self.scene_nursery.start_soon(self.set_state)
-            self.state = STATE_WAITING
+            self.state = STATE_WAITING_SERVER
 
         elif e.unicode:
             self.username += e.unicode
@@ -108,14 +107,22 @@ class Username(Scene):
             return False
         return True
 
-    async def set_state(self) -> None:
+    def update(self) -> None:
+        if self.state[0] != STATE_WAITING_SERVER[0]:
+            return
 
-        log.debug("Waiting for server response...")
-        resp = await self.resp_recvch.receive()
-        log.debug(f"resp: {resp}")
+        try:
+            resp = self.resp_recvch.receive_nowait()
+        except trio.WouldBlock:
+            return
+
+        log.debug(f"server response: {resp}")
 
         if resp['type'] == 'accepted':
             self.state = STATE_ACCEPTED
+            self.going = False
+            # the channel is being closed at the other end, but I can't be
+            # bothered to do some wonky logic to wait for it. Who cares...
             return
         elif resp['type'] == 'refused':
             self.modal.alter(
@@ -135,6 +142,7 @@ class Username(Scene):
             self.modal.alter(content=msg)
             self.modal.visible = True
         self.state = STATE_REFUSED
+
 
     def render(self) -> None:
         # render the username
@@ -157,9 +165,8 @@ class Username(Scene):
 
         self.modal.render()
 
-
     def next_scene(self) -> Tuple[str, Dict[str, Any]]:
-        return 'lobby', {'stream': self.stream}
+        return 'lobby', {'stream': self.stream, 'username': self.username}
 
     def finish(self) -> None:
         self.scene_nursery.start_soon(self.stream.aclose)

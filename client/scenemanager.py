@@ -5,8 +5,9 @@ import pygame.freetype
 from client.resman import *
 from client.types import *
 from client.const import *
-from client.scenes.username import Username
 from client.scenes.connect import Connect
+from client.scenes.username import Username
+from client.scenes.lobby import Lobby
 from client.scenes.test import Test
 
 log = logging.getLogger(__name__)
@@ -29,7 +30,6 @@ async def manage_scenes(game_nursery: Nursery) -> None:
 
     log.info("start client")
 
-
     pygame.init()
     pygame.freetype.init()
 
@@ -39,6 +39,7 @@ async def manage_scenes(game_nursery: Nursery) -> None:
     scenes: Dict[str, type] = {
         "username": Username,
         "connect": Connect,
+        "lobby": Lobby,
         "test": Test,
     }
 

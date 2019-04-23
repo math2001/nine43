@@ -1,20 +1,24 @@
 - log all communication to files: pretty much write your own log librairy
   -> network logger
-- let's play with ci!!
-- build better trio.Sequence
 - initiator test make more clean
 - the whole server should know when a connection is dropped, so that it can
   reuse the username
 - implement monitoring protocol with the server (just ping and spit out JSON)
-- loop back to lobby once the sub is done
 - do at least some unit tests for the client
 - do something for sub scenes
-- put font edit into resource manager
 - add "report" button to errors
 - bug with empty usernames
+- move pygame stubs into their own package
+- CI notification when it fails
+- test client scenes by looking at the state
+- use pdata across scenes
+- send information to client during the lobby
 
 DONE show error messages @ username
 DONE fix modal prevents quit
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
 DONE check for duplicate username
+DONE let's play with ci!!
+DONE put font edit into resource manager
+DONE loop back to lobby once the sub is done
