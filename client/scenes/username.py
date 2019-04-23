@@ -30,8 +30,6 @@ async def submit_username(
     """
 
     # TODO: retry if it's only a temporary error
-    return await sendch.send({"type": "error", "message": "some fucking error asdfl;hwqepda fewhdsaihaka oji fewoihwf ofroij gaoijfgoijhufg gd h;ofgoihfdoihfd"})
-
     try:
         await stream.write({"type": "log in", "username": username})
     except net.ConnectionClosed as e:
@@ -77,10 +75,12 @@ class Username(Scene):
             content=f"Internal error. Please report at {ISSUES}",
             ok="OK",
             on_ok=self.hide_modal,
-            width=450)
+            width=450,
+            screen=self.screen)
 
     def hide_modal(self) -> None:
         self.modal.visible = False
+        self.state = STATE_WAITING_INPUT
 
     def handle_event(self, e: Event) -> bool:
         self.modal.handle_event(e)
@@ -117,25 +117,25 @@ class Username(Scene):
 
         if resp['type'] == 'accepted':
             self.state = STATE_ACCEPTED
+            return
         elif resp['type'] == 'refused':
-            # TODO: show popup or something
-            self.state = STATE_REFUSED
+            self.modal.alter(
+                content=f"LOL. Can't even join. \n\n{resp['message']}",
+                title='Refused')
+            self.modal.visible = True
         elif resp['type'] == 'error':
             log.error(f"Errored while sending username {resp}")
-            msg = f"Errored while sending username: \n{resp['message']}\n" \
+            msg = f"Errored while sending username: \n\n{resp['message']}\n\n" \
                   f"Please report at {ISSUES}"
             self.modal.alter(content=msg)
-            self.modal.rect.center = self.screen.rect.center
             self.modal.visible = True
-            self.modal.moved()
         else:
             log.error(f"Unknown behaviour while sending username {resp}")
             msg = f"Unknown behaviour while sending username: \n\n{resp}\n\n" \
                   f"Please report at {ISSUES}"
             self.modal.alter(content=msg)
-            self.modal.rect.center = self.screen.rect.center
             self.modal.visible = True
-            self.modal.moved()
+        self.state = STATE_REFUSED
 
     def render(self) -> None:
         # render the username
@@ -156,7 +156,7 @@ class Username(Scene):
             rect.top -= 20
             font.render_to(self.screen.surf, rect, None)
 
-        self.modal.render(self.screen)
+        self.modal.render()
 
 
     def next_scene(self) -> Tuple[str, Dict[str, Any]]:

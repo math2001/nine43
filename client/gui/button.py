@@ -5,9 +5,10 @@ from client.gui.types import *
 
 class Button(GuiItem):
 
-    def __init__(self, text: str, on_click: Callable[[], None]) -> None:
+    def __init__(self, text: str, on_click: Callable[[], None], screen: Screen) -> None:
         self._state = NORMAL
         self.on_click = on_click
+        self.screen = screen
         self.alter(text)
 
     def handle_event(self, event: Event) -> bool:
@@ -29,16 +30,16 @@ class Button(GuiItem):
             self._state = NORMAL
         return False
 
-    def render(self, screen: Screen) -> None:
+    def render(self) -> None:
         with fontedit(get_font(MONO)) as font:
             rect = font.get_rect(self._text)
             rect.center = self.rect.center
-            font.render_to(screen.surf, rect, None)
+            font.render_to(self.screen.surf, rect, None)
             if self._state == NORMAL:
-                pygame.draw.rect(screen.surf,
+                pygame.draw.rect(self.screen.surf,
                     pygame.Color("white"), self.rect, 1)
             elif self._state in (HOVER, CLICKED):
-                pygame.draw.rect(screen.surf,
+                pygame.draw.rect(self.screen.surf,
                     pygame.Color("white"), self.rect, 2)
 
 

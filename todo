@@ -1,4 +1,5 @@
 - log all communication to files: pretty much write your own log librairy
+  -> network logger
 - let's play with ci!!
 - build better trio.Sequence
 - initiator test make more clean
@@ -10,8 +11,10 @@
 - show error messages @ username
 - do something for sub scenes
 - put font edit into resource manager
-- modal prevents quit
+- add "report" button to errors
+- bug with empty usernames
 
+DONE fix modal prevents quit
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
 DONE check for duplicate username

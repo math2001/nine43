@@ -41,7 +41,7 @@ async def manage_scenes(game_nursery: Nursery) -> None:
         "test": Test,
     }
 
-    scene_name = "test"
+    scene_name = "connect"
 
     clock = pygame.time.Clock()
 
@@ -62,15 +62,16 @@ async def manage_scenes(game_nursery: Nursery) -> None:
             while scene.going:
 
                 for e in pygame.event.get():
-                    if scene.handle_event(e):
-                        continue # event handled
-
                     if e.type == pygame.QUIT:
                         log.info("quiting")
                         scene.close()
                         scene.finish()
                         going = False
-                    elif e.type == pygame.KEYDOWN and e.key == pygame.K_F2:
+
+                    elif scene.handle_event(e):
+                        continue # event handled
+
+                    if e.type == pygame.KEYDOWN and e.key == pygame.K_F2:
                         debug = not debug
 
                 screen.surf.fill(pygame.Color('black'))

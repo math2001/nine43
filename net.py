@@ -9,7 +9,6 @@ log.setLevel(logging.INFO)
 
 BUFSIZE = 4096
 
-
 class ConnectionClosed(Exception):
     pass
 

@@ -8,11 +8,12 @@ import client.gui.text as text
 class Modal(GuiItem):
 
     def __init__(self, title: str, content: str, ok: str,
-        on_ok: Callable[[], None], width: int):
+        on_ok: Callable[[], None], width: int, screen: Screen):
 
         self._on_ok = on_ok
+        self.screen = screen
 
-        self._btn_ok = Button(ok, self._on_ok)
+        self._btn_ok = Button(ok, self._on_ok, self.screen)
         self.alter(title, content, width, ok)
 
         self.visible = False
@@ -56,6 +57,7 @@ class Modal(GuiItem):
 
         self._btn_ok.alter(self._ok)
 
+        self.rect.center = self.screen.rect.center
         self.moved()
 
     def handle_event(self, e: Event) -> bool:
@@ -67,23 +69,22 @@ class Modal(GuiItem):
         # capture every single event
         return True
 
-    def render(self, screen: Screen) -> None:
+    def render(self) -> None:
         if not self.visible:
             return
  
-        pygame.draw.rect(screen.surf, pygame.Color("white"), self.rect, 1)
+        pygame.draw.rect(self.screen.surf, pygame.Color("white"), self.rect, 1)
         bg = self.rect.inflate(-2, -2)
         bg.center = self.rect.center
-        pygame.draw.rect(screen.surf, pygame.Color("black"), bg)
+        pygame.draw.rect(self.screen.surf, pygame.Color("black"), bg)
 
-        r1 = screen.surf.blit(self._title_surf, (self.rect.left + 10,
+        r1 = self.screen.surf.blit(self._title_surf, (self.rect.left + 10,
             self.rect.top + 10))
-        r2 = screen.surf.blit(self._content_surf, (self.rect.left + 10,
+        r2 = self.screen.surf.blit(self._content_surf, (self.rect.left + 10,
             self.rect.top + 10 + self._title_surf.get_height()))
 
         if DEBUG:
-            pygame.draw.rect(screen.surf, pygame.Color('red'), r1, 1)
-            pygame.draw.rect(screen.surf, pygame.Color('red'), r2, 1)
+            pygame.draw.rect(self.screen.surf, pygame.Color('red'), r1, 1)
+            pygame.draw.rect(self.screen.surf, pygame.Color('red'), r2, 1)
 
-        self._btn_ok.render(screen)
-
+        self._btn_ok.render()

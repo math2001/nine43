@@ -4,12 +4,12 @@ from client.types import *
 NORMAL = 'normal'
 HOVER = 'hover'
 CLICKED = 'clicked'
-DEBUG = True
+DEBUG = False
 
 class GuiItem(abc.ABC):
 
     @abc.abstractmethod
-    def render(self, screen: Screen) -> None:
+    def render(self) -> None:
         pass
 
     @abc.abstractmethod
