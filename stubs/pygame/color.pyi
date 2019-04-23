@@ -1,4 +1,6 @@
-from typing import Text, Tuple, Union, overload
+from typing import *
+
+ValidColor = Union[Tuple[int, int, int], Color]
 
 class Color(object):
     r: int

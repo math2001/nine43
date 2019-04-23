@@ -1,0 +1,29 @@
+def get_ticks() -> int:
+    ...
+
+def wait(ms: int) -> None:
+    ...
+
+def delay(ms: int) -> None:
+    ...
+
+def set_timer(e: int, ms: int) -> None:
+    ...
+
+
+class Clock:
+
+    def tick(self, framerate: float=0) -> int:
+        ...
+
+    def tick_busy_loop(self, framerate: float=0) -> int:
+        ...
+
+    def get_time(self) -> int:
+        ...
+
+    def get_rawtime(self) -> int:
+        ...
+
+    def get_fps(self) -> float:
+        ...

@@ -29,9 +29,11 @@ async def manage_scenes(game_nursery: Nursery) -> None:
 
     log.info("start client")
 
+
     pygame.init()
     pygame.freetype.init()
 
+    pygame.key.set_repeat(300, 50)
     screen = get_screen()
 
     scenes: Dict[str, type] = {

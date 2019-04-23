@@ -39,10 +39,17 @@ def height(font: Font, width: int, text: str) -> int:
 
             x += bounds.x + bounds.width + space.width
 
+    # font size can be a tuple with (width, height) or an integer
+    size: int = 0
+    if isinstance(font.size, tuple):
+        size = font.size[0]
+    else:
+        size = font.size
+
     # for some reason, get_sized_descender returns a negative number
     # add some extra to y so that we can see what's bellow the baseline on 
     # the last line (bottom of j for example)
-    return y - font.get_sized_descender(font.size) + 4
+    return y - font.get_sized_descender(size) + 4
 
 def render(surf: pygame.Surface, font: Font, text: str) -> None:
     words = split_words(text)

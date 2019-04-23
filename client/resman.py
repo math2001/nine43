@@ -17,7 +17,7 @@ def get_image(name: str) -> pygame.Surface:
     if name in _resources['images']:
         return _resources['images'][name]
 
-    return pygame.image.load_alpha(f'./client/resources/images/{name}.png').convert_alpha()
+    return pygame.image.load(f'./client/resources/images/{name}.png').convert_alpha()
 
 def get_font(name: str) -> Font:
     if name in _resources['fonts']:
@@ -29,9 +29,10 @@ def get_font(name: str) -> Font:
     return font
 
 @contextmanager
-def fontedit(fontname: str, **kwargs: Any) -> Iterator[Font]:
+def fontedit(fontname: Union[str, Font], **kwargs: Any) -> Iterator[Font]:
     """ Applies some settings to a font, and then removes them """
-    font = get_font(fontname)
+    if isinstance(fontname, str):
+        font = get_font(fontname)
     defaults = {}
     for key in kwargs:
         try:

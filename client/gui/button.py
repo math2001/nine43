@@ -46,4 +46,4 @@ class Button(GuiItem):
         if text:
             self._text = text
 
-        self.rect = get_font(MONO).get_rect(self._text).inflate((20, 20))
+        self.rect = get_font(MONO).get_rect(self._text).inflate(20, 20)
