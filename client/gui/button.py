@@ -30,7 +30,7 @@ class Button(GuiItem):
         return False
 
     def render(self) -> None:
-        with fontedit(MONO)) as font:
+        with fontedit(MONO) as font:
             rect = font.get_rect(self._text)
             rect.center = self.rect.center
             font.render_to(self.screen.surf, rect, None)
