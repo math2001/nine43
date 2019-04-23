@@ -39,7 +39,6 @@ async def get_username(
     log.debug(f"got username {msg['username']!r}")
     return msg['username']
 
-
 async def initiate_conn(
         rawstream: trio.abc.Stream,
         playerch: SendCh[Player],

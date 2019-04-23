@@ -8,12 +8,12 @@
 - implement monitoring protocol with the server (just ping and spit out JSON)
 - loop back to lobby once the sub is done
 - do at least some unit tests for the client
-- show error messages @ username
 - do something for sub scenes
 - put font edit into resource manager
 - add "report" button to errors
 - bug with empty usernames
 
+DONE show error messages @ username
 DONE fix modal prevents quit
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
