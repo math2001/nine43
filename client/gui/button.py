@@ -3,7 +3,7 @@ from client.const import *
 from client.resman import *
 from client.gui.types import *
 
-class Button:
+class Button(GuiItem):
 
     def __init__(self, text: str, on_click: Callable[[], None]) -> None:
         self._state = NORMAL

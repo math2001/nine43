@@ -9,6 +9,7 @@
 - do at least some unit tests for the client
 - show error messages @ username
 - do something for sub scenes
+- put font edit into resource manager
 
 DONE use clone instead of fan in
 DONE test net.ConnectionClosed @ initiator
