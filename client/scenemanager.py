@@ -2,10 +2,9 @@ import logging
 import trio
 import pygame
 import pygame.freetype
-from client.resman import get_font
+from client.resman import *
 from client.types import *
 from client.const import *
-from client.utils import *
 from client.scenes.username import Username
 from client.scenes.connect import Connect
 from client.scenes.test import Test

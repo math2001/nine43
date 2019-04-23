@@ -12,8 +12,7 @@ import logging
 import server.lobby as lobby
 import server.sub.select as select
 import server.sub.world as world
-from server.types import Player
-from typings import *
+from server.types import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -26,7 +25,7 @@ def load_worlds_metadata() -> Tuple[Dict[str, str], ...]:
         },
     )
 
-async def new_sub(group: Tuple[Player, ...]) -> None:
+async def new_sub(group: Group) -> None:
     log.info("[sub] select")
     try:
         chosen_world = await select.select(group, load_worlds_metadata())
@@ -34,7 +33,7 @@ async def new_sub(group: Tuple[Player, ...]) -> None:
         return log.exception("sub crashed: select failed")
 
     log.info("[sub] world '%s'", chosen_world['name'])
-    result = await world.world(group, chosen_world)
+    result: Result = await world.world(group, chosen_world)
 
     log.info("[sub] fin")
-    await fin.fin(group, result)
+    # await fin.fin(group, result)

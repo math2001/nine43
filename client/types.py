@@ -41,7 +41,7 @@ class Scene(abc.ABC):
     def next_scene(self) -> Tuple[str, Dict[str, Any]]:
         return "", {}
 
-    def handle_event(self, e: Event) -> bool:
+    def handle_event(self, e: pygame.event.EventType) -> bool:
         return False
 
     def __str__(self) -> str:

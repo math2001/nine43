@@ -4,8 +4,7 @@ import trio.testing
 import net
 import tests
 import server.sub.select as select
-from server.types import Player
-from typings import *
+from server.types import *
 
 async def _check_votes_result(
         votes: List[int],
@@ -49,7 +48,7 @@ async def test_get_chosen_world() -> None:
     
 
 async def _check_conversation(
-        worlds: Tuple[Dict[str, str], ...],
+        worlds: Tuple[World, ...],
         votes: Tuple[int, ...]) -> None:
     """ util function for conversation test """
 
@@ -62,7 +61,7 @@ async def _check_conversation(
         ends.append(left)
 
     async def sel() -> None:
-        await select.select(tuple(players), worlds)
+        await select.select(Group(tuple(players)), worlds)
         # we ignore the result of the votes, this isn't the purpose of this test
 
     async def send_votes(votes: Tuple[int, ...]) -> None:

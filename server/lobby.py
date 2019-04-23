@@ -46,7 +46,7 @@ async def select(a: RecvCh[T], b: RecvCh[T]) -> Tuple[T, RecvCh[T], bool]:
 
     sendch, recvch = trio.open_memory_channel[T](0)
 
-    result = "default value. Raise error!"
+    result: Optional[T] = None
     still_open = True
     channel = None
 
@@ -57,7 +57,7 @@ async def select(a: RecvCh[T], b: RecvCh[T]) -> Tuple[T, RecvCh[T], bool]:
             result = await ch.receive()
         except trio.EndOfChannel:
             still_open = False
-            result = ""
+            result = None
 
         channel = ch
         nursery.cancel_scope.cancel()

@@ -11,7 +11,6 @@ import trio.testing
 import net
 import tests
 import server.lobby as lobby
-from typings import *
 from server.types import *
 
 def new_stream_player(username: str) -> Tuple[Player, Player]:
@@ -40,7 +39,7 @@ async def test_lobby() -> None:
 
 
     player_sendch, player_recvch = trio.open_memory_channel[Player](0)
-    group_sendch, group_recvch = trio.open_memory_channel[Tuple[Player, ...]](0)
+    group_sendch, group_recvch = trio.open_memory_channel[Group](0)
 
     async def send(
             client_end: Player,
@@ -56,7 +55,7 @@ async def test_lobby() -> None:
 
 
     groups_event = trio.Event()
-    groups: List[Tuple[Player, ...]] = []
+    groups: List[Group] = []
 
     async def send_sequence(
             playerch: SendCh[Player],
@@ -74,9 +73,9 @@ async def test_lobby() -> None:
         i_left, i_right = new_stream_player(username="i")
 
 
-        groups.append((b_right, c_right, d_right))
-        groups.append((e_right, g_right, h_right))
-        groups.append((i_left, ))
+        groups.append(Group((b_right, c_right, d_right)))
+        groups.append(Group((e_right, g_right, h_right)))
+        groups.append(Group((i_left, )))
         groups_event.set()
 
         async with seq(0):
@@ -99,14 +98,14 @@ async def test_lobby() -> None:
             await playerch.aclose()
 
     async def check_groupch(
-            groupch: RecvCh[Tuple[Player, ...]],
+            groupch: RecvCh[Group],
             seq: trio.testing.Sequencer
         ) -> None:
 
         await groups_event.wait()
         first = groups[0]
         second = groups[1]
-        i_left = groups[2][0]
+        i_left = groups[2].players[0]
 
         async with seq(1):
             assert await groupch.receive() == groups[0]
@@ -128,7 +127,7 @@ async def test_lobby() -> None:
 
     async def monitor(
             playerch: SendCh[Player],
-            groupch: RecvCh[Tuple[Player, ...]]
+            groupch: RecvCh[Group]
         ) -> None:
 
         # right is the part that is send to the server, and left the part that

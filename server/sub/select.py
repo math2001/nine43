@@ -9,9 +9,7 @@ It should also handle timeouts.
 
 import logging
 import random
-from typings import *
-from server.types import Player
-import server.lobby as lobby
+from server.types import *
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -71,8 +69,8 @@ async def get_chosen_world(
             indexes.append(i)
 
 async def select(
-        group: Tuple[Player, ...],
-        worlds: Tuple[Dict[str, str], ...]
+        group: Group,
+        worlds: Tuple[World, ...]
     ) -> Dict[str, str]:
 
 
@@ -85,11 +83,11 @@ async def select(
 
     async with trio.open_nursery() as nursery:
         log.debug("sending worlds")
-        for player in group:
+        for player in group.players:
             nursery.start_soon(player.stream.write, msg)
         log.debug('waiting for votes')
-        for player in group:
+        for player in group.players:
             nursery.start_soon(gather_vote, player, votes_sendch)
 
-        indexes = await get_chosen_world(votes_recvch, len(worlds), len(group))
+        indexes = await get_chosen_world(votes_recvch, len(worlds), len(group.players))
     return worlds[random.choice(indexes)]

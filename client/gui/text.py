@@ -1,4 +1,3 @@
-from client.utils import *
 from client.const import *
 from client.resman import *
 from client.gui.types import *

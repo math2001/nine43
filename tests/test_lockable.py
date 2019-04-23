@@ -1,8 +1,9 @@
 import pytest
 import server.types
+from typings import *
 
-async def test_lockable():
-    val_lockable = server.types.Lockable([])
+async def test_lockable() -> None:
+    val_lockable = server.types.Lockable[List[int]]([])
     async with val_lockable as val:
         val.append(2)
 

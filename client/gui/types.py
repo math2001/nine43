@@ -8,6 +8,9 @@ DEBUG = False
 
 class GuiItem(abc.ABC):
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        self.state = NORMAL
+
     @abc.abstractmethod
     def render(self) -> None:
         pass

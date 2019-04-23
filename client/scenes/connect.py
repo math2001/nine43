@@ -1,8 +1,7 @@
 import logging
 import net
-from client.resman import get_font
+from client.resman import *
 from client.types import *
-from client.utils import *
 from client.const import *
 
 log = logging.getLogger(__name__)

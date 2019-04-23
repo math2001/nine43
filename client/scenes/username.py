@@ -4,7 +4,6 @@ import net
 import client.gui as gui
 from client.resman import *
 from client.types import *
-from client.utils import *
 from client.const import *
 
 log = logging.getLogger(__name__)

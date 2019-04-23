@@ -3,9 +3,10 @@
 
 import pygame
 import pygame.freetype
+from contextlib import contextmanager
 from client.types import *
 
-__all__ = ['get_image', 'get_font']
+__all__ = ['get_image', 'get_font', 'fontedit']
 
 _resources: Dict[str, Any] = {
     "images": {},
@@ -26,3 +27,24 @@ def get_font(name: str) -> Font:
     # some sane defaults
     font.fgcolor = 255, 255, 255
     return font
+
+@contextmanager
+def fontedit(fontname: str, **kwargs: Any) -> Iterator[Font]:
+    """ Applies some settings to a font, and then removes them """
+    font = get_font(fontname)
+    defaults = {}
+    for key in kwargs:
+        try:
+            defaults[key] = getattr(font, key)
+        except AttributeError as e:
+            raise AttributeError(f"Invalid parameter for font {key!r}")
+        try:
+            setattr(font, key, kwargs[key])
+        except AttributeError:
+            raise AttributeError(f"Could not set {key!r}. Probably read-only")
+    yield font
+    for key, value in defaults.items():
+        try:
+            setattr(font, key, value)
+        except AttributeError:
+            raise AttributeError(f"Could not reset {key!r} to its original value")

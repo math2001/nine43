@@ -23,11 +23,11 @@ class Player:
         return str(self)
 
 
+@attr.s(auto_attribs=True, str=False, repr=False)
 class Group:
 
-    def __init__(self, players: Tuple[Player, ...]):
-        self.players = players
-        self.selected_world_name = ""
+    players: Tuple[Player, ...]
+    selected_world_name: str = attr.ib(default="")
 
     def __str__(self) -> str:
         return repr(self)
@@ -58,3 +58,9 @@ class Lockable(Generic[T]):
 
     async def __aexit__(self, *exc: Any) -> None:
         self.release()
+
+
+World = Dict[str, Any]
+
+class Result:
+    pass
