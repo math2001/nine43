@@ -80,7 +80,7 @@ class Connect(Scene):
                 self.going = False
 
     def render(self) -> None:
-        with fontedit(get_font(MONO)) as font:
+        with fontedit(MONO)) as font:
             rect = font.get_rect(self.state[1])
             rect.center = self.screen.rect.center
             font.render_to(self.screen.surf, rect, None)

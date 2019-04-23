@@ -20,7 +20,7 @@ def get_screen() -> Screen:
     return Screen(surf, rect)
 
 def show_debug(screen: Screen, scene: Scene, fps: float) -> None:
-    with fontedit(get_font(MONO)) as font:
+    with fontedit(MONO)) as font:
         rect = font.get_rect(f"{scene!r} {fps:.2f} fps")
         rect.bottomright = screen.rect.bottomright
         font.render_to(screen.surf, rect, None, bgcolor=pygame.Color('black'))

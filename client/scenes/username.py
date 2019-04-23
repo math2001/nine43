@@ -140,7 +140,7 @@ class Username(Scene):
         # render the username
         start = [self.screen.rect.centerx - 50, self.screen.rect.centery]
 
-        with fontedit(get_font(MONO), origin=True) as font:
+        with fontedit(MONO), origin=True) as font:
             rect = font.render_to(self.screen.surf, start, self.username)
 
         if self.state == STATE_WAITING_INPUT:
@@ -149,7 +149,7 @@ class Username(Scene):
             end = start[0] + 5, start[1]
             pygame.draw.line(self.screen.surf, pygame.Color("white"), start, end, 2)
 
-        with fontedit(get_font(MONO), fgcolor=pygame.Color("grey")) as font:
+        with fontedit(MONO), fgcolor=pygame.Color("grey")) as font:
             rect = font.get_rect(self.state[1])
             rect.midbottom = self.screen.rect.midbottom
             rect.top -= 20

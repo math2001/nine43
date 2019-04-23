@@ -41,12 +41,12 @@ class Modal(GuiItem):
 
         prev_center: Optional[Tuple[int, int]] = None
 
-        with fontedit(get_font(MONO), strong=True) as font:
+        with fontedit(MONO, strong=True) as font:
             title_height = text.height(font, self._width - 20, self._title)
             self._title_surf = pygame.Surface((self._width - 20, title_height))
             text.render(self._title_surf, font, self._title)
 
-        with fontedit(get_font(MONO)) as font:
+        with fontedit(MONO) as font:
             content_height = text.height(font, self._width - 20, self._content)
             self._content_surf = pygame.Surface((self._width - 20, content_height))
             text.render(self._content_surf, font, self._content)
