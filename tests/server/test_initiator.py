@@ -15,6 +15,7 @@ async def test_username() -> None:
 
     conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
     player_sendch, player_recvch = trio.open_memory_channel[Player](0)
+    quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
 
     conns = {
         "slow": new_half_stream_pair(),
@@ -25,6 +26,7 @@ async def test_username() -> None:
         'closing': new_half_stream_pair(),
         'closing2': new_half_stream_pair(),
         'closing3': new_half_stream_pair(),
+        'quitter': new_half_stream_pair(),
     }
 
     async def got_login_request(client: net.JSONStream) -> None:
@@ -44,7 +46,6 @@ async def test_username() -> None:
         assert cancel_scope.cancelled_caught is False, \
                 "waiting for log in acception from server took to long"
         
-
     async def client_slow(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
 
         client, right = conns["slow"]
@@ -148,9 +149,11 @@ async def test_username() -> None:
 
     async def wait_for_all_clients(
             connch: SendCh[trio.abc.Stream],
-            seq: Seq
+            quitch: SendCh[Player]
         ) -> None:
-        async with connch:
+        seq = trio.testing.Sequencer()
+
+        async with connch, quitch:
             async with trio.open_nursery() as nursery:
                 nursery.start_soon(client_slow, connch, seq)
                 nursery.start_soon(client_quick, connch, seq)
@@ -162,19 +165,96 @@ async def test_username() -> None:
 
     async def monitor(
             connch: SendCh[trio.abc.Stream],
-            playerch: RecvCh[Player]) -> None:
-
-        seq = trio.testing.Sequencer()
+            playerch: RecvCh[Player],
+            quitch: SendCh[Player]) -> None:
 
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(wait_for_all_clients, connch, seq)
+            nursery.start_soon(wait_for_all_clients, connch, quitch)
             nursery.start_soon(get_players, playerch)
 
     with trio.move_on_after(2) as cancel_scope:
         async with trio.open_nursery() as nursery:
-            nursery.start_soon(initiator.initiator, conn_recvch, player_sendch)
-            nursery.start_soon(monitor, conn_sendch, player_recvch)
+            nursery.start_soon(
+                initiator.initiator,
+                conn_recvch,
+                player_sendch,
+                quit_recvch
+            )
+            nursery.start_soon(monitor, conn_sendch, player_recvch, quit_sendch)
 
     assert cancel_scope.cancelled_caught is False, \
             "initator and/or monitor took too long to finish"
+    
+async def test_quitter() -> None:
+    # left is a net.JSONStream, right just a trio.abc.Stream
+
+    async def spawn(
+        connch: SendCh[trio.abc.Stream],
+        playerch: RecvCh[Player],
+        quitch: SendCh[Player],
+    ) -> None:
+
+        left, right = new_half_stream_pair()
+
+        await connch.send(right)
+        assert await left.read() == {"type": "log in"}
+        await left.write({"type": "log in", "username": "first"})
+        assert await left.read() == {
+            "type": "log in update",
+            "state": "accepted"
+        }
+
+        # the initiator should spit the player out
+        player = await playerch.receive()
+
+        assert player.username == "first"
+        assert player.stream == net.JSONStream(right)
+
+        # player quits from the lobby or a sub, or anything that isn't the 
+        # initiator
+        await quitch.send(player)
+
+        left, right = new_half_stream_pair()
+
+        await connch.send(right)
+        assert await left.read() == {"type": "log in"}
+        # notice how we use the same username. It shouldn't block, because 
+        # the other quitted
+        await left.write({"type": "log in", "username": "first"})
+        assert await left.read() == {
+            "type": "log in update",
+            "state": "accepted"
+        }
+
+        player = await playerch.receive()
+
+        assert player.username == "first"
+        assert player.stream == net.JSONStream(right)
+
+        await conn_sendch.aclose()
+        await quit_sendch.aclose()
+
+
+    conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
+    player_sendch, player_recvch = trio.open_memory_channel[Player](0)
+    quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
+
+    async with trio.open_nursery() as nursery:
+        nursery.cancel_scope.deadline = trio.current_time() + 2
+        nursery.start_soon(
+            spawn,
+            conn_sendch,
+            player_recvch,
+            quit_sendch
+        )
+        nursery.start_soon(
+            initiator.initiator,
+            conn_recvch,
+            player_sendch,
+            quit_recvch
+        )
+
+
+    assert nursery.cancel_scope.cancelled_caught is False, \
+            f"spawn timed out after 2 seconds"
     

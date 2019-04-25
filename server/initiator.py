@@ -6,6 +6,43 @@ from server.types import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+async def initiator(
+        connch: RecvCh[trio.abc.Stream],
+        playerch: SendCh[Player],
+        quitch: RecvCh[Player],
+    ) -> None:
+
+    log.info("initiator started")
+
+    usernameslk = Lockable[List[str]]([])
+
+    async with playerch:
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(release_usernames, quitch, usernameslk)
+            async for conn in connch:
+                nursery.start_soon(
+                    initiate_conn,
+                    conn,
+                    playerch,
+                    usernameslk
+                )
+
+            log.debug("connch closed. %d tasks left in nursery",
+                len(nursery.child_tasks))
+
+    log.info("initiator finished")
+
+async def release_usernames(
+        quitch: RecvCh[Player],
+        usernameslk: Lockable[List[str]],
+    ) -> None:
+
+    async for player in quitch:
+        log.debug(f"removing {player.username!r} from list of usernames")
+        async with usernameslk as usernames:
+            usernames.remove(player.username)
+    log.info("quit channel closed")
+
 async def get_username(
         stream: net.JSONStream,
         usernameslk: Lockable[List[str]]
@@ -42,7 +79,7 @@ async def get_username(
 async def initiate_conn(
         rawstream: trio.abc.Stream,
         playerch: SendCh[Player],
-        usernameslk: Lockable[List[str]]
+        usernameslk: Lockable[List[str]],
     ) -> None:
 
     log.debug("initiating stream")
@@ -63,7 +100,7 @@ async def initiate_conn(
 
             username = await get_username(stream, usernameslk)
             if not username:
-                return log.warning("connection dropped")
+                return log.info("connection dropped")
 
             player = Player(stream, username)
 
@@ -95,22 +132,3 @@ async def initiate_conn(
     await playerch.send(player)
     log.info("player '%s' sent", username)
 
-async def initiator(
-        connch: RecvCh[trio.abc.Stream],
-        playerch: SendCh[Player],
-        quitch: RecvCh[Player],
-    ) -> None:
-
-    log.info("initiator started")
-
-    usernameslk = Lockable[List[str]]([])
-
-    async with playerch:
-        async with trio.open_nursery() as nursery:
-            async for conn in connch:
-                nursery.start_soon(initiate_conn, conn, playerch, usernameslk)
-
-            log.debug("connch closed. %d tasks left in nursery",
-                len(nursery.child_tasks))
-
-    log.info("initiator stopped")
