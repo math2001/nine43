@@ -10,6 +10,7 @@ __all__ = ["get_image", "get_font", "fontedit"]
 
 _resources: Dict[str, Any] = {"images": {}, "fonts": {}}
 
+pygame.freetype.init()
 
 def get_image(name: str) -> pygame.Surface:
     if name in _resources["images"]:
@@ -25,6 +26,7 @@ def get_font(name: str) -> Font:
     font = pygame.freetype.Font(f"./client/resources/fonts/{name}.ttf", size=14)
     # some sane defaults
     font.fgcolor = 255, 255, 255
+    _resources["fonts"][name] = font
     return font
 
 
