@@ -2,8 +2,8 @@ from client.const import *
 from client.resman import *
 from client.gui.types import *
 
-class Button(GuiItem):
 
+class Button(GuiItem):
     def __init__(self, text: str, on_click: Callable[[], None], screen: Screen) -> None:
         self._state = NORMAL
         self.on_click = on_click
@@ -35,14 +35,11 @@ class Button(GuiItem):
             rect.center = self.rect.center
             font.render_to(self.screen.surf, rect, None)
             if self._state == NORMAL:
-                pygame.draw.rect(self.screen.surf,
-                    pygame.Color("white"), self.rect, 1)
+                pygame.draw.rect(self.screen.surf, pygame.Color("white"), self.rect, 1)
             elif self._state in (HOVER, CLICKED):
-                pygame.draw.rect(self.screen.surf,
-                    pygame.Color("white"), self.rect, 2)
+                pygame.draw.rect(self.screen.surf, pygame.Color("white"), self.rect, 2)
 
-
-    def alter(self, text: str="") -> None:
+    def alter(self, text: str = "") -> None:
         if text:
             self._text = text
 

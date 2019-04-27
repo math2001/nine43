@@ -19,8 +19,7 @@ import pygame.image
 
 from pygame.locals import *
 from pygame.rect import Rect as Rect
-from pygame.surface import Surface as Surface # wtf? doesn't work otherwise
-
+from pygame.surface import Surface as Surface  # wtf? doesn't work otherwise
 
 Color = pygame.color.Color
 BufferProxy = pygame.bufferproxy.BufferProxy
@@ -28,5 +27,4 @@ BufferProxy = pygame.bufferproxy.BufferProxy
 # def __getattr__(name: str) -> Any: ...  # don't error on missing stubs
 
 def init() -> Tuple[int, int]: ...
-
 def quit() -> None: ...

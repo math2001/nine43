@@ -4,10 +4,17 @@ from client.gui.types import *
 from client.gui.button import Button
 import client.gui.text as text
 
-class Modal(GuiItem):
 
-    def __init__(self, title: str, content: str, ok: str,
-        on_ok: Callable[[], None], width: int, screen: Screen):
+class Modal(GuiItem):
+    def __init__(
+        self,
+        title: str,
+        content: str,
+        ok: str,
+        on_ok: Callable[[], None],
+        width: int,
+        screen: Screen,
+    ):
 
         self._on_ok = on_ok
         self.screen = screen
@@ -25,11 +32,9 @@ class Modal(GuiItem):
         self._btn_ok.rect.bottom -= 10
         self._btn_ok.rect.left -= 10
 
-    def alter(self,
-        title: str="",
-        content: str="",
-        width: int=0,
-        ok: str="") -> None:
+    def alter(
+        self, title: str = "", content: str = "", width: int = 0, ok: str = ""
+    ) -> None:
         if title:
             self._title = title
         if content:
@@ -51,8 +56,12 @@ class Modal(GuiItem):
             self._content_surf = pygame.Surface((self._width - 20, content_height))
             text.render(self._content_surf, font, self._content)
 
-        self.rect = pygame.Rect(0, 0, self._width,
-            title_height + content_height + self._btn_ok.rect.height + 30)
+        self.rect = pygame.Rect(
+            0,
+            0,
+            self._width,
+            title_height + content_height + self._btn_ok.rect.height + 30,
+        )
 
         self._btn_ok.alter(self._ok)
 
@@ -71,19 +80,22 @@ class Modal(GuiItem):
     def render(self) -> None:
         if not self.visible:
             return
- 
+
         pygame.draw.rect(self.screen.surf, pygame.Color("white"), self.rect, 1)
         bg = self.rect.inflate(-2, -2)
         bg.center = self.rect.center
         pygame.draw.rect(self.screen.surf, pygame.Color("black"), bg)
 
-        r1 = self.screen.surf.blit(self._title_surf, (self.rect.left + 10,
-            self.rect.top + 10))
-        r2 = self.screen.surf.blit(self._content_surf, (self.rect.left + 10,
-            self.rect.top + 10 + self._title_surf.get_height()))
+        r1 = self.screen.surf.blit(
+            self._title_surf, (self.rect.left + 10, self.rect.top + 10)
+        )
+        r2 = self.screen.surf.blit(
+            self._content_surf,
+            (self.rect.left + 10, self.rect.top + 10 + self._title_surf.get_height()),
+        )
 
         if DEBUG:
-            pygame.draw.rect(self.screen.surf, pygame.Color('red'), r1, 1)
-            pygame.draw.rect(self.screen.surf, pygame.Color('red'), r2, 1)
+            pygame.draw.rect(self.screen.surf, pygame.Color("red"), r1, 1)
+            pygame.draw.rect(self.screen.surf, pygame.Color("red"), r2, 1)
 
         self._btn_ok.render()

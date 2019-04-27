@@ -14,34 +14,27 @@ from server.types import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 async def gather_vote(player: Player, votesch: SendCh[int]) -> None:
     log.debug("waiting for vote from %s", player)
     resp = await player.stream.read()
     log.debug("got response from %s: %s", player, resp)
 
-    if resp['type'] != 'vote':
+    if resp["type"] != "vote":
         log.warning("gather vote: invalid type %s", resp)
         await votesch.send(-1)
-        await player.stream.write({
-            "type": "vote",
-            "input": "ignored"
-        })
+        await player.stream.write({"type": "vote", "input": "ignored"})
         return
 
-    log.debug("send vote on channel: %d", resp['index'])
-    await votesch.send(resp['index'])
+    log.debug("send vote on channel: %d", resp["index"])
+    await votesch.send(resp["index"])
     log.debug("send confirmation")
-    await player.stream.write({
-        "type": "vote",
-        "input": "considered"
-    })
+    await player.stream.write({"type": "vote", "input": "considered"})
 
 
 async def get_chosen_world(
-        votesch: RecvCh[int],
-        nworlds: int,
-        nvotes: int
-    ) -> List[int]:
+    votesch: RecvCh[int], nworlds: int, nvotes: int
+) -> List[int]:
     """ Returns a list of the most popular worlds
     """
 
@@ -68,16 +61,10 @@ async def get_chosen_world(
         else:
             indexes.append(i)
 
-async def select(
-        group: Group,
-        worlds: Tuple[World, ...]
-    ) -> Dict[str, str]:
 
+async def select(group: Group, worlds: Tuple[World, ...]) -> Dict[str, str]:
 
-    msg = {
-        "type": "select world",
-        "worlds": worlds
-    }
+    msg = {"type": "select world", "worlds": worlds}
 
     votes_sendch, votes_recvch = trio.open_memory_channel[int](0)
 
@@ -85,7 +72,7 @@ async def select(
         log.debug("sending worlds")
         for player in group.players:
             nursery.start_soon(player.stream.write, msg)
-        log.debug('waiting for votes')
+        log.debug("waiting for votes")
         for player in group.players:
             nursery.start_soon(gather_vote, player, votes_sendch)
 

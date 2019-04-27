@@ -12,4 +12,4 @@ Message = Dict[str, Any]
 RecvCh = trio.abc.ReceiveChannel
 SendCh = trio.abc.SendChannel
 Seq = trio.testing.Sequencer
-T = TypeVar('T')
+T = TypeVar("T")

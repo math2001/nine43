@@ -1,4 +1,3 @@
-
 def truncate_middle(string: str, size: int) -> str:
     if size < 3:
         raise ValueError("cannot truncate to less than 3 characters")
@@ -6,4 +5,4 @@ def truncate_middle(string: str, size: int) -> str:
         return string
 
     end_size = (size - 3) // 2
-    return string[:end_size] + '...' + string[len(string)-end_size:]
+    return string[:end_size] + "..." + string[len(string) - end_size :]

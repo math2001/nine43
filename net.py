@@ -9,8 +9,10 @@ log.setLevel(logging.INFO)
 
 BUFSIZE = 4096
 
+
 class ConnectionClosed(Exception):
     pass
+
 
 class JSONStream:
     """ A wrapper around a trio.Stream """
@@ -28,7 +30,7 @@ class JSONStream:
     async def read(self) -> Message:
         async with self._read_cap:
             log.debug(f"Acquired reading semaphore")
-            i = self._read_buf.find(b'\n')
+            i = self._read_buf.find(b"\n")
             while i == -1:
                 try:
                     data = await self._stream.receive_some(BUFSIZE)
@@ -40,12 +42,12 @@ class JSONStream:
 
                 self._read_buf += data
 
-                i = self._read_buf.find(b'\n')
+                i = self._read_buf.find(b"\n")
                 log.debug(f"Adding to buffer {data}")
 
             i += 1
 
-            line = str(self._read_buf[:i], encoding='utf-8')
+            line = str(self._read_buf[:i], encoding="utf-8")
             self._read_buf[:i] = []
 
         log.debug(f"(release read semaphore) Parsing line: {line!r}")
@@ -54,7 +56,7 @@ class JSONStream:
             raise ValueError(f"Invalid empty value: {line!r}")
 
         try:
-            obj= cast(Message, json.loads(line))
+            obj = cast(Message, json.loads(line))
         except ValueError:
             log.exception(f"Invalid JSON: {line!r}")
             raise
@@ -73,7 +75,9 @@ class JSONStream:
         async with self._write_cap:
             log.debug(f"Sending {obj}")
             try:
-                await self._stream.send_all(bytes(json.dumps(obj) + '\n', encoding='utf-8'))
+                await self._stream.send_all(
+                    bytes(json.dumps(obj) + "\n", encoding="utf-8")
+                )
             except trio.BrokenResourceError:
                 raise ConnectionClosed(f"stream closed while writing")
 
@@ -89,11 +93,13 @@ class JSONStream:
             acquired += 1
 
         if cancel_scope.cancelled_caught:
-            log.warning("Forcefully closing stream after 2 seconds, "
-                        f"{acquired} semaphore(s) acquired")
+            log.warning(
+                "Forcefully closing stream after 2 seconds, "
+                f"{acquired} semaphore(s) acquired"
+            )
 
         await self._stream.aclose()
-        log.debug('Stream closed, releasing semaphores')
+        log.debug("Stream closed, releasing semaphores")
         if acquired >= 1:
             self._write_cap.release()
         if acquired >= 2:

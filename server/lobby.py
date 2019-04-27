@@ -4,7 +4,7 @@ It would make the main function "sync", and much more maintainable
 """
 
 import logging
-import net  
+import net
 from server.types import *
 
 # from .shit_lobby import lobby
@@ -12,12 +12,13 @@ from server.types import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 async def lobby(
     playerch: RecvCh[Player],
     groupch: SendCh[Group],
     group_size: int,
-    quitch: SendCh[Player]
-    ) -> None:
+    quitch: SendCh[Player],
+) -> None:
 
     # this is a local quitch, used to keep track of the stack
     quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
@@ -37,9 +38,11 @@ async def lobby(
                         if not still_open:
                             # remember: this is the local quit channel
                             # the quit channel should never be closed while the
-                            # lobby is running. 
-                            raise RuntimeError("quit channel was closed " \
-                                "unexpectedly. Please report.")
+                            # lobby is running.
+                            raise RuntimeError(
+                                "quit channel was closed "
+                                "unexpectedly. Please report."
+                            )
                         log.info(f"{player} left the lobby ({len(stack)} - 1)")
                         log.debug(f"{stack}")
                         # tell the server a player left. Spawns on a different
@@ -52,11 +55,7 @@ async def lobby(
 
                         # send the new stack to the players
                         # copy the stack, it can loop on it without worrying.
-                        parent.start_soon(
-                            stack_changed,
-                            tuple(stack),
-                            group_size
-                        )
+                        parent.start_soon(stack_changed, tuple(stack), group_size)
 
                     elif ch == playerch and still_open:
                         log.info(f"{player} joined the lobby ({len(stack)} + 1)")
@@ -65,23 +64,14 @@ async def lobby(
                         stack.append(player)
 
                         # spawn watch
-                        nursery.start_soon(
-                            watch_close,
-                            player,
-                            quit_sendch.clone()
-                        )
+                        nursery.start_soon(watch_close, player, quit_sendch.clone())
 
                         parent.start_soon(
-                            player.stream.write,
-                            {"type": "lobby", "message": "welcome"}
+                            player.stream.write, {"type": "lobby", "message": "welcome"}
                         )
 
                         # same as above
-                        parent.start_soon(
-                            stack_changed,
-                            tuple(stack),
-                            group_size
-                        )
+                        parent.start_soon(stack_changed, tuple(stack), group_size)
                     elif ch == playerch and not still_open:
                         log.info("stopping lobby (playerch closed)")
                         # we can't close these streams because there are still
@@ -92,10 +82,9 @@ async def lobby(
                         create_more_stacks = False
                         nursery.cancel_scope.cancel()
                     else:
-                        raise RuntimeError(f"Invalid select result {player} "
-                            f"{ch} {still_open}")
-
-
+                        raise RuntimeError(
+                            f"Invalid select result {player} " f"{ch} {still_open}"
+                        )
 
                 # if we haven't stopped the loop, it means that the stack is
                 # full
@@ -114,6 +103,7 @@ async def lobby(
         log.debug("lobby main loop exited, waiting for parent nursery to close")
     log.info("lobby finished")
 
+
 async def close_all(players: List[Player]) -> None:
     log.info(f"closing stack {players}")
     async with trio.open_nursery() as nursery:
@@ -124,24 +114,25 @@ async def close_all(players: List[Player]) -> None:
     if nursery.cancel_scope.cancelled_caught:
         log.warning("timed out closing all players")
 
+
 async def stack_changed(stack: Tuple[Player, ...], group_size: int) -> None:
     return
     async with trio.open_nursery() as nursery:
         for player in stack:
-            nursery.start_soon(player.stream.write, {
-                'type': 'lobby update',
-                # same here, we pass a copy of the tuple, so that we can
-                # keep looping freely without worrying about what .write is
-                # doing with the list
-                'players': tuple(stack),
-                'group_size': group_size
-            })
+            nursery.start_soon(
+                player.stream.write,
+                {
+                    "type": "lobby update",
+                    # same here, we pass a copy of the tuple, so that we can
+                    # keep looping freely without worrying about what .write is
+                    # doing with the list
+                    "players": tuple(stack),
+                    "group_size": group_size,
+                },
+            )
 
 
-async def watch_close(
-    player: Player,
-    quitch: SendCh[Player],
-    ) -> None:
+async def watch_close(player: Player, quitch: SendCh[Player]) -> None:
     """ sends player on quitch as soon as its stream is closed
 
     The only way to check if a TCP connection closed by the other end is to
@@ -163,6 +154,7 @@ async def watch_close(
         return
 
     log.error(f"recieved message while watching close: {msg}")
+
 
 async def select(a: RecvCh[T], b: RecvCh[T]) -> Tuple[T, RecvCh[T], bool]:
     """ A good enough select
@@ -198,4 +190,4 @@ async def select(a: RecvCh[T], b: RecvCh[T]) -> Tuple[T, RecvCh[T], bool]:
         nursery.start_soon(_fetch_and_cancel, b, nursery)
         nursery.start_soon(_fetch_and_cancel, a, nursery)
 
-    return result, channel, still_open # type: ignore
+    return result, channel, still_open  # type: ignore

@@ -15,16 +15,19 @@ log.setLevel(logging.INFO)
 
 MAX_FPS = 60.0
 
+
 def get_screen() -> Screen:
     surf = pygame.display.set_mode((500, 500))
     rect = surf.get_rect()
     return Screen(surf, rect)
 
+
 def show_debug(screen: Screen, scene: Scene, fps: float) -> None:
     with fontedit(MONO) as font:
         rect = font.get_rect(f"{scene!r} {fps:.2f} fps")
         rect.bottomright = screen.rect.bottomright
-        font.render_to(screen.surf, rect, None, bgcolor=pygame.Color('black'))
+        font.render_to(screen.surf, rect, None, bgcolor=pygame.Color("black"))
+
 
 async def manage_scenes(game_nursery: Nursery) -> None:
 
@@ -71,12 +74,12 @@ async def manage_scenes(game_nursery: Nursery) -> None:
                         going = False
 
                     elif scene.handle_event(e):
-                        continue # event handled
+                        continue  # event handled
 
                     if e.type == pygame.KEYDOWN and e.key == pygame.K_F2:
                         debug = not debug
 
-                screen.surf.fill(pygame.Color('black'))
+                screen.surf.fill(pygame.Color("black"))
                 scene.update()
                 scene.render()
 

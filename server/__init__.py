@@ -16,6 +16,7 @@ PORT = 9999
 SLEEP_TIME = 0.1
 GROUP_SIZE = 2
 
+
 async def run() -> None:
     """ The overarching piece of the server.
 
@@ -42,33 +43,21 @@ async def run() -> None:
         # when a player quits, it's send back to this channel
         quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
 
-        nursery.start_soon(
-            accept_conns,
-            PORT,
-            conn_sendch
-        )
+        nursery.start_soon(accept_conns, PORT, conn_sendch)
+
+        nursery.start_soon(initiator.initiator, conn_recvch, player_sendch, quit_recvch)
 
         nursery.start_soon(
-            initiator.initiator,
-            conn_recvch,
-            player_sendch,
-            quit_recvch
-        )
-
-        nursery.start_soon(
-            lobby.lobby,
-            player_recvch,
-            stack_sendch,
-            GROUP_SIZE,
-            quit_sendch.clone()
+            lobby.lobby, player_recvch, stack_sendch, GROUP_SIZE, quit_sendch.clone()
         )
 
         nursery.start_soon(
             submanager.submanager,
             stack_recvch,
             player_sendch.clone(),
-            quit_sendch.clone()
+            quit_sendch.clone(),
         )
+
 
 async def accept_conns(port: int, connch: SendCh[trio.abc.Stream]) -> None:
     listeners = await trio.open_tcp_listeners(port)
@@ -76,13 +65,13 @@ async def accept_conns(port: int, connch: SendCh[trio.abc.Stream]) -> None:
         for ln in listeners:
             nursery.start_soon(_handle_one_listener, nursery, ln, connch)
 
+
 # straight from trio's source code. The thing is that their default handler
 # closes the connection as soon as the handler is done, which I don't want
 # because it prevents delegation
 async def _handle_one_listener(
-    nursery: Nursery,
-    ln: trio.SocketListener,
-    connch: SendCh[trio.abc.Stream]) -> None:
+    nursery: Nursery, ln: trio.SocketListener, connch: SendCh[trio.abc.Stream]
+) -> None:
 
     async with ln:
         while True:
@@ -90,18 +79,21 @@ async def _handle_one_listener(
                 stream = await ln.accept()
             except OSError as exc:
                 # the system is too busy
-                if exc.errno in [errno.EMFILE, errno.ENFILE, errno.ENOMEM,
-                                 errno.ENOBUFS]:
+                if exc.errno in [
+                    errno.EMFILE,
+                    errno.ENFILE,
+                    errno.ENOMEM,
+                    errno.ENOBUFS,
+                ]:
                     log.error(
                         "accept returned %s (%s); retrying in %s seconds",
                         errno.errorcode[exc.errno],
                         os.strerror(exc.errno),
                         SLEEP_TIME,
-                        exc_info=True
+                        exc_info=True,
                     )
                     await trio.sleep(SLEEP_TIME)
                 else:
                     raise
             else:
                 nursery.start_soon(connch.send, stream)
-

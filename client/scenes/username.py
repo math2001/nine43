@@ -14,11 +14,10 @@ STATE_WAITING_SERVER = 10, "Waiting for server response..."
 STATE_REFUSED = 20, "Connection refused"
 STATE_ACCEPTED = 30, "Going to lobby!"
 
-async def submit_username(
-    username: str,
-    stream: net.JSONStream,
-    sendch: SendCh[Message]) -> None:
 
+async def submit_username(
+    username: str, stream: net.JSONStream, sendch: SendCh[Message]
+) -> None:
     """ Submits the username and waits for the server to accept
 
     it sends one value on the channel and then closes it.
@@ -43,7 +42,7 @@ async def submit_username(
     if "type" not in resp:
         return await sendch.send({"type": "error", "error": f"no type {resp}"})
 
-    if resp['type'] != 'log in update':
+    if resp["type"] != "log in update":
         return await sendch.send({"type": "error", "error": f"invalid type {resp}"})
 
     if resp["state"] == "accepted":
@@ -54,19 +53,16 @@ async def submit_username(
     else:
         return await sendch.send({"type": "error", "error": f"invalid type in {resp}"})
 
-class Username(Scene):
 
-    def __init__(self,
-        nursery: Nursery,
-        screen: Screen,
-        pdata: SimpleNamespace):
+class Username(Scene):
+    def __init__(self, nursery: Nursery, screen: Screen, pdata: SimpleNamespace):
         super().__init__(nursery, screen, pdata)
 
         self.pdata.username = ""
         self.resp_sendch, self.resp_recvch = trio.open_memory_channel[Message](0)
         self.request_sent = trio.Event()
 
-        assert hasattr(self.pdata, 'stream')
+        assert hasattr(self.pdata, "stream")
 
         self.state = STATE_WAITING_INPUT
 
@@ -76,7 +72,8 @@ class Username(Scene):
             ok="OK",
             on_ok=self.hide_modal,
             width=450,
-            screen=self.screen)
+            screen=self.screen,
+        )
 
     def hide_modal(self) -> None:
         self.modal.visible = False
@@ -97,8 +94,12 @@ class Username(Scene):
 
         elif e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
 
-            self.scene_nursery.start_soon(submit_username, self.pdata.username,
-                                          self.pdata.stream, self.resp_sendch)
+            self.scene_nursery.start_soon(
+                submit_username,
+                self.pdata.username,
+                self.pdata.stream,
+                self.resp_sendch,
+            )
             self.state = STATE_WAITING_SERVER
 
         elif e.unicode:
@@ -119,31 +120,34 @@ class Username(Scene):
 
         log.debug(f"server response: {resp}")
 
-        if resp['type'] == 'accepted':
+        if resp["type"] == "accepted":
             self.state = STATE_ACCEPTED
             self.going = False
             # the channel is being closed at the other end, but I can't be
             # bothered to do some wonky logic to wait for it. Who cares...
             return
-        elif resp['type'] == 'refused':
+        elif resp["type"] == "refused":
             self.modal.alter(
-                content=f"LOL. Can't even join. \n\n{resp['message']}",
-                title='Refused')
+                content=f"LOL. Can't even join. \n\n{resp['message']}", title="Refused"
+            )
             self.modal.visible = True
-        elif resp['type'] == 'error':
+        elif resp["type"] == "error":
             log.error(f"Errored while sending username {resp}")
-            msg = f"Errored while sending username: \n\n{resp['message']}\n\n" \
-                  f"Please report at {ISSUES}"
+            msg = (
+                f"Errored while sending username: \n\n{resp['message']}\n\n"
+                f"Please report at {ISSUES}"
+            )
             self.modal.alter(content=msg)
             self.modal.visible = True
         else:
             log.error(f"Unknown behaviour while sending username {resp}")
-            msg = f"Unknown behaviour while sending username: \n\n{resp}\n\n" \
-                  f"Please report at {ISSUES}"
+            msg = (
+                f"Unknown behaviour while sending username: \n\n{resp}\n\n"
+                f"Please report at {ISSUES}"
+            )
             self.modal.alter(content=msg)
             self.modal.visible = True
         self.state = STATE_REFUSED
-
 
     def render(self) -> None:
         # render the username
@@ -167,7 +171,7 @@ class Username(Scene):
         self.modal.render()
 
     def next_scene(self) -> str:
-        return 'lobby'
+        return "lobby"
 
     def finish(self) -> None:
         self.scene_nursery.start_soon(self.pdata.stream.aclose)

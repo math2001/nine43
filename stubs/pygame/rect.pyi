@@ -3,8 +3,9 @@ from typing import Dict, Iterable, List, Sequence, Tuple, TypeVar, Union, overlo
 _K = TypeVar("_K")
 _V = TypeVar("_V")
 
-_RectStyle = Union[Tuple[float, float, float, float],
-                   Tuple[Tuple[float, float], Tuple[float, float]]]
+_RectStyle = Union[
+    Tuple[float, float, float, float], Tuple[Tuple[float, float], Tuple[float, float]]
+]
 
 class Rect(object):
     x: int
@@ -30,9 +31,13 @@ class Rect(object):
     w: int
     h: int
     @overload
-    def __init__(self, left: float, top: float, width: float, height: float) -> None: ...
+    def __init__(
+        self, left: float, top: float, width: float, height: float
+    ) -> None: ...
     @overload
-    def __init__(self, left_top: Iterable[float], width_height: Iterable[float]) -> None: ...
+    def __init__(
+        self, left_top: Iterable[float], width_height: Iterable[float]
+    ) -> None: ...
     @overload
     def __init__(self) -> None: ...
     # This constructor is undocumented, but it works and is in fact used in
@@ -65,10 +70,18 @@ class Rect(object):
     # that defaults to False. If it is False, the keys in rect_dict must be
     # Rect-like; otherwise, the values must be Rects.
     @overload
-    def collidedict(self, rect_dict: Dict[_RectStyle, _V], values: bool = ...) -> Tuple[_RectStyle, _V]: ...
+    def collidedict(
+        self, rect_dict: Dict[_RectStyle, _V], values: bool = ...
+    ) -> Tuple[_RectStyle, _V]: ...
     @overload
-    def collidedict(self, rect_dict: Dict[_K, "Rect"], values: bool) -> Tuple[_K, "Rect"]: ...
+    def collidedict(
+        self, rect_dict: Dict[_K, "Rect"], values: bool
+    ) -> Tuple[_K, "Rect"]: ...
     @overload
-    def collidedictall(self, rect_dict: Dict[_RectStyle, _V], values: bool = ...) -> List[Tuple[_RectStyle, _V]]: ...
+    def collidedictall(
+        self, rect_dict: Dict[_RectStyle, _V], values: bool = ...
+    ) -> List[Tuple[_RectStyle, _V]]: ...
     @overload
-    def collidedictall(self, rect_dict: Dict[_K, "Rect"], values: bool) -> List[Tuple[_K, "Rect"]]: ...
+    def collidedictall(
+        self, rect_dict: Dict[_K, "Rect"], values: bool
+    ) -> List[Tuple[_K, "Rect"]]: ...

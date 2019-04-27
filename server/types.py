@@ -3,6 +3,7 @@ import net
 from typings import *
 from utils import truncate_middle
 
+
 @attr.s(auto_attribs=True, str=False, repr=False)
 class Player:
 
@@ -12,9 +13,11 @@ class Player:
     username: str
 
     def __eq__(self, o: Any) -> bool:
-        return isinstance(o, Player) \
-            and o.stream is self.stream \
+        return (
+            isinstance(o, Player)
+            and o.stream is self.stream
             and o.username == self.username
+        )
 
     def __str__(self) -> str:
         return f"Player({self.username!r}, {truncate_middle(repr(self.stream), 20)})"
@@ -37,7 +40,6 @@ class Group:
 
 
 class Lockable(Generic[T]):
-
     def __init__(self, val: T):
         self._val = val
         self._cap = trio.CapacityLimiter(1)
@@ -61,6 +63,7 @@ class Lockable(Generic[T]):
 
 
 World = Dict[str, Any]
+
 
 class Result:
     pass

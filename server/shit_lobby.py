@@ -24,10 +24,8 @@ from server.types import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
-async def watch_close(
-        player: Player,
-        player_leftch: SendCh[Player]
-    ) -> None:
+
+async def watch_close(player: Player, player_leftch: SendCh[Player]) -> None:
     """ sends player on player_leftch as soon as its stream is closed
 
     The only way to check if a TCP connection closed by the other end is to
@@ -50,10 +48,10 @@ async def watch_close(
         return
     log.error(f"recieved message while watching close: {msg}")
 
+
 async def remove_player_when_leaves(
-        player_leftch: RecvCh[Player],
-        stacklk: Lockable[List[Player]]
-    ) -> None:
+    player_leftch: RecvCh[Player], stacklk: Lockable[List[Player]]
+) -> None:
 
     log.debug("ready to remove player from stack as they leave...")
 
@@ -61,18 +59,19 @@ async def remove_player_when_leaves(
         async with stacklk as stack:
             stack.remove(player)
 
+
 async def add_new_players(
-        parent: Nursery,
-        playerch: RecvCh[Player],
-        stacklk: Lockable[List[Player]],
-        groupch: SendCh[Group],
-        group_size: int
-    ) -> None:
+    parent: Nursery,
+    playerch: RecvCh[Player],
+    stacklk: Lockable[List[Player]],
+    groupch: SendCh[Group],
+    group_size: int,
+) -> None:
 
     player_left_sendch, player_left_recvch = trio.open_memory_channel[Player](0)
 
     while True:
-        log.debug('looping!')
+        log.debug("looping!")
         final_stack: Tuple[Player, ...] = ()
 
         async with trio.open_nursery() as nursery:
@@ -96,7 +95,9 @@ async def add_new_players(
                     log.info(f"add {player} to the stack")
                     stack.append(player)
 
-                    parent.start_soon(player.stream.write, {"type": "lobby", "message": "welcome"})
+                    parent.start_soon(
+                        player.stream.write, {"type": "lobby", "message": "welcome"}
+                    )
                     nursery.start_soon(watch_close, player, player_left_sendch)
                     if len(stack) == group_size:
                         log.debug("caching and clearing stack")
@@ -104,7 +105,6 @@ async def add_new_players(
                         final_stack = tuple(stack)
                         stack.clear()
                         need_more_players = False
-
 
         if len(final_stack) != group_size:
             log.critical("stack length is different than the expected stack length!")
@@ -114,11 +114,10 @@ async def add_new_players(
         parent.start_soon(groupch.send, Group(players=final_stack))
         log.debug("stack sent!")
 
+
 async def lobby(
-        playerch: RecvCh[Player],
-        groupch: SendCh[Group],
-        group_size: int
-    ) -> None:
+    playerch: RecvCh[Player], groupch: SendCh[Group], group_size: int
+) -> None:
 
     log.info("start lobby")
 
@@ -128,15 +127,17 @@ async def lobby(
         async with trio.open_nursery() as nursery:
             await add_new_players(nursery, playerch, stacklk, groupch, group_size)
             if len(nursery.child_tasks) > 0:
-                log.warning(f"{len(nursery.child_tasks)} tasks left in lobby "
-                            f"parent nursery. Closing in 2")
+                log.warning(
+                    f"{len(nursery.child_tasks)} tasks left in lobby "
+                    f"parent nursery. Closing in 2"
+                )
 
                 await trio.sleep(2)
                 if len(nursery.child_tasks) > 0:
                     log.critical(f"force cancel {len(nursery.child_tasks)} tasks")
                     nursery.cancel_scope.cancel()
 
-    log.debug('closing connections; acquiring stack')
+    log.debug("closing connections; acquiring stack")
     async with stacklk as stack:
         log.info(f"closing {len(stack)} player(s) from stack...")
         with trio.move_on_after(2) as cancel_scope:

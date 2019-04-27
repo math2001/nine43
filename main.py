@@ -3,9 +3,9 @@ import trio
 import logging
 
 logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s %(name)-25s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.DEBUG
+    format="%(asctime)s %(levelname)-8s %(name)-25s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.DEBUG,
 )
 
 if len(sys.argv) != 2:
@@ -16,16 +16,20 @@ if len(sys.argv) != 2:
     print(" - client")
     exit(2)
 
+
 def main() -> None:
-    if sys.argv[1] == 'server':
+    if sys.argv[1] == "server":
         import server
+
         trio.run(server.run)
-    elif sys.argv[1] == 'client':
+    elif sys.argv[1] == "client":
         import client
+
         trio.run(client.run)
     else:
         print(f"Invalid command {sys.argv[1]}")
         exit(1)
+
 
 try:
     main()

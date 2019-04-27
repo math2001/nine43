@@ -6,27 +6,27 @@ import pygame.freetype
 from contextlib import contextmanager
 from client.types import *
 
-__all__ = ['get_image', 'get_font', 'fontedit']
+__all__ = ["get_image", "get_font", "fontedit"]
 
-_resources: Dict[str, Any] = {
-    "images": {},
-    "fonts": {},
-}
+_resources: Dict[str, Any] = {"images": {}, "fonts": {}}
+
 
 def get_image(name: str) -> pygame.Surface:
-    if name in _resources['images']:
-        return _resources['images'][name]
+    if name in _resources["images"]:
+        return _resources["images"][name]
 
-    return pygame.image.load(f'./client/resources/images/{name}.png').convert_alpha()
+    return pygame.image.load(f"./client/resources/images/{name}.png").convert_alpha()
+
 
 def get_font(name: str) -> Font:
-    if name in _resources['fonts']:
-        return _resources['fonts'][name]
+    if name in _resources["fonts"]:
+        return _resources["fonts"][name]
 
-    font = pygame.freetype.Font(f'./client/resources/fonts/{name}.ttf', size=14)
+    font = pygame.freetype.Font(f"./client/resources/fonts/{name}.ttf", size=14)
     # some sane defaults
     font.fgcolor = 255, 255, 255
     return font
+
 
 @contextmanager
 def fontedit(fontname: Union[str, Font], **kwargs: Any) -> Iterator[Font]:

@@ -7,7 +7,10 @@ from client.const import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
-async def open_connection(host: str, port: int, streamch: SendCh[net.JSONStream]) -> None:
+
+async def open_connection(
+    host: str, port: int, streamch: SendCh[net.JSONStream]
+) -> None:
 
     """ open connection with server.
 
@@ -27,7 +30,7 @@ async def open_connection(host: str, port: int, streamch: SendCh[net.JSONStream]
     async def wait_for_login(stream: net.JSONStream) -> None:
         """ reads until the server says to log in """
         resp = await stream.read()
-        if resp != {'type': 'log in'}:
+        if resp != {"type": "log in"}:
             log.error(f"invalid resp {resp}")
             await wait_for_login(stream)
 
@@ -37,6 +40,7 @@ async def open_connection(host: str, port: int, streamch: SendCh[net.JSONStream]
 
     log.debug(f"closing streamch {stream}")
     await streamch.aclose()
+
 
 class Connect(Scene):
 
@@ -54,10 +58,7 @@ class Connect(Scene):
         stream_sendch, self.stream_recvch = trio.open_memory_channel[net.JSONStream](0)
 
         self.scene_nursery.start_soon(
-            open_connection,
-            self.host,
-            self.port,
-            stream_sendch
+            open_connection, self.host, self.port, stream_sendch
         )
 
         self.state = 0, f"Connecting to {self.host}:{self.port}..."
@@ -79,8 +80,7 @@ class Connect(Scene):
             except trio.EndOfChannel:
                 self.going = False
             else:
-                raise ValueError(f"streamch should have been closed, got "
-                                 f"{msg!r}")
+                raise ValueError(f"streamch should have been closed, got " f"{msg!r}")
 
     def render(self) -> None:
         with fontedit(MONO) as font:
@@ -89,7 +89,7 @@ class Connect(Scene):
             font.render_to(self.screen.surf, rect, None)
 
     def next_scene(self) -> str:
-        return 'username'
+        return "username"
 
     def finish(self) -> None:
         if self.state[0] >= 10:

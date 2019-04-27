@@ -11,14 +11,15 @@ log.setLevel(logging.INFO)
 Font = pygame.freetype.Font
 Event = pygame.event.EventType
 
+
 @attr.s(auto_attribs=True)
 class Screen:
 
     surf: Any
     rect: Any
 
-class Scene(abc.ABC):
 
+class Scene(abc.ABC):
     def __init__(self, nursery: Nursery, screen: Screen, pdata: SimpleNamespace):
         self.scene_nursery = nursery
         self.screen = screen

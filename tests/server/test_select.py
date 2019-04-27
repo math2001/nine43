@@ -6,10 +6,10 @@ import tests
 import server.sub.select as select
 from server.types import *
 
+
 async def _check_votes_result(
-        votes: List[int],
-        answers: List[int],
-        nworlds: int) -> None:
+    votes: List[int], answers: List[int], nworlds: int
+) -> None:
     """ A util function to test the return value of chosen world
 
     answers is plural because there can be more than one answer: when sevaral
@@ -31,8 +31,9 @@ async def _check_votes_result(
             nursery.start_soon(send_votes, votes_sendch)
             nursery.start_soon(check_decision)
 
-    assert cancel_scope.cancelled_caught is False, \
-            "Sending vote/checking decision timed out"
+    assert (
+        cancel_scope.cancelled_caught is False
+    ), "Sending vote/checking decision timed out"
 
 
 async def test_get_chosen_world() -> None:
@@ -43,13 +44,12 @@ async def test_get_chosen_world() -> None:
         await _check_votes_result([1, 2, 3, 4], [1, 2, 3, 4], 5)
         await _check_votes_result([-1, -1], [0, 1, 2, 3, 4], 5)
 
-    assert cancel_scope.cancelled_caught is False, \
-            "checking votes timed out"
-    
+    assert cancel_scope.cancelled_caught is False, "checking votes timed out"
+
 
 async def _check_conversation(
-        worlds: Tuple[World, ...],
-        votes: Tuple[int, ...]) -> None:
+    worlds: Tuple[World, ...], votes: Tuple[int, ...]
+) -> None:
     """ util function for conversation test """
 
     players: List[Player] = []
@@ -70,13 +70,10 @@ async def _check_conversation(
                 "type": "select world",
                 # convert into a list because when the JSON is decoded,
                 # it's decoded as a list, not a tuple
-                "worlds": list(worlds)
+                "worlds": list(worlds),
             }
 
-            await ends[i].write({
-                "type": "vote",
-                "index": vote
-            })
+            await ends[i].write({"type": "vote", "index": vote})
 
             msg = await ends[i].read()
             if vote == -1:
@@ -91,16 +88,10 @@ async def _check_conversation(
 
 async def test_conversation() -> None:
     """ Ensure that the server sends the correct messages to the client """
-    worlds = (
-        {"a": "a"},
-        {"b": "b"},
-        {"c": "c"}
-    )
+    worlds = ({"a": "a"}, {"b": "b"}, {"c": "c"})
 
     with trio.move_on_after(2) as cancel_scope:
         await _check_conversation(worlds, (0, 1, 1, 2, 0))
         await _check_conversation(worlds, (0, 1, 1, 2, 2, 2))
 
-    assert cancel_scope.cancelled_caught is False, \
-            "check confirmation timed out"
-    
+    assert cancel_scope.cancelled_caught is False, "check confirmation timed out"

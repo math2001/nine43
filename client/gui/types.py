@@ -1,13 +1,13 @@
 import abc
 from client.types import *
 
-NORMAL = 'normal'
-HOVER = 'hover'
-CLICKED = 'clicked'
+NORMAL = "normal"
+HOVER = "hover"
+CLICKED = "clicked"
 DEBUG = False
 
-class GuiItem(abc.ABC):
 
+class GuiItem(abc.ABC):
     def __init__(self, *args: Any, **kwargs: Any):
         self.state = NORMAL
 

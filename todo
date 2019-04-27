@@ -12,10 +12,9 @@
 - CI notification when it fails
 - test client scenes by looking at the state
 - send information to client during the lobby
-- git hook on commit
 - actions monitoring!
-- yapf code base (git hook?)
 
+DONE yapf code base (git hook?) -> used black
 DONE use pdata across scenes
 DONE show error messages @ username
 DONE fix modal prevents quit

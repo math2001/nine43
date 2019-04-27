@@ -6,10 +6,12 @@ import net
 from server.types import Player
 from typings import *
 
+
 def new_half_stream_pair() -> Tuple[net.JSONStream, trio.abc.Stream]:
     left, right = trio.testing.memory_stream_pair()
     client = net.JSONStream(left)
     return client, right
+
 
 async def test_username() -> None:
 
@@ -23,29 +25,28 @@ async def test_username() -> None:
         "average": new_half_stream_pair(),
         "late": new_half_stream_pair(),
         "average2": new_half_stream_pair(),
-        'closing': new_half_stream_pair(),
-        'closing2': new_half_stream_pair(),
-        'closing3': new_half_stream_pair(),
-        'quitter': new_half_stream_pair(),
+        "closing": new_half_stream_pair(),
+        "closing2": new_half_stream_pair(),
+        "closing3": new_half_stream_pair(),
+        "quitter": new_half_stream_pair(),
     }
 
     async def got_login_request(client: net.JSONStream) -> None:
         with trio.move_on_after(2) as cancel_scope:
             assert await client.read() == {"type": "log in"}
 
-        assert cancel_scope.cancelled_caught is False, \
-                "waiting for log in request from server took to long"
+        assert (
+            cancel_scope.cancelled_caught is False
+        ), "waiting for log in request from server took to long"
 
     async def got_accepted(client: net.JSONStream) -> None:
         with trio.move_on_after(2) as cancel_scope:
-            assert await client.read() == {
-                "type": "log in update",
-                "state": "accepted"
-            }
+            assert await client.read() == {"type": "log in update", "state": "accepted"}
 
-        assert cancel_scope.cancelled_caught is False, \
-                "waiting for log in acception from server took to long"
-        
+        assert (
+            cancel_scope.cancelled_caught is False
+        ), "waiting for log in acception from server took to long"
+
     async def client_slow(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
 
         client, right = conns["slow"]
@@ -70,7 +71,7 @@ async def test_username() -> None:
             await got_accepted(client)
 
     async def client_average(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
-        client, right = conns['average']
+        client, right = conns["average"]
 
         async with seq(2):
             await connch.send(right)
@@ -81,7 +82,7 @@ async def test_username() -> None:
             await got_accepted(client)
 
     async def client_late(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
-        client, right = conns['late']
+        client, right = conns["late"]
 
         async with seq(11):
             await connch.send(right)
@@ -90,7 +91,7 @@ async def test_username() -> None:
             await got_accepted(client)
 
     async def client_duplicate(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
-        client, right = conns['average2']
+        client, right = conns["average2"]
 
         async with seq(3):
             await connch.send(right)
@@ -101,17 +102,16 @@ async def test_username() -> None:
             assert await client.read() == {
                 "type": "log in update",
                 "state": "refused",
-                "message": "username taken"
+                "message": "username taken",
             }
 
         async with seq(12):
             await client.write({"type": "log in", "username": "average2"})
             await got_accepted(client)
 
-
     async def client_closing_reuse(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
 
-        client, right = conns['closing']
+        client, right = conns["closing"]
 
         async with seq(5):
             await connch.send(right)
@@ -122,14 +122,14 @@ async def test_username() -> None:
             await got_accepted(client)
 
     async def client_closing_giveup(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
-        client, right = conns['closing2']
+        client, right = conns["closing2"]
 
         async with seq(4):
             await connch.send(right)
             await got_login_request(client)
             await client.aclose()
 
-        client, right = conns['closing3']
+        client, right = conns["closing3"]
 
         async with seq(9):
             await connch.send(right)
@@ -138,19 +138,19 @@ async def test_username() -> None:
             await client.aclose()
 
     async def get_players(playerch: RecvCh[Player]) -> None:
-        order = ['quick', 'average', 'slow', 'late', 'average2', 'closing']
+        order = ["quick", "average", "slow", "late", "average2", "closing"]
 
         i = 0
         async for player in playerch:
             assert player.username == order[i]
-            assert player.stream == net.JSONStream(conns[order[i]][1]), \
-                    f"{order[i]!r} stream differs"
+            assert player.stream == net.JSONStream(
+                conns[order[i]][1]
+            ), f"{order[i]!r} stream differs"
             i += 1
 
     async def wait_for_all_clients(
-            connch: SendCh[trio.abc.Stream],
-            quitch: SendCh[Player]
-        ) -> None:
+        connch: SendCh[trio.abc.Stream], quitch: SendCh[Player]
+    ) -> None:
         seq = trio.testing.Sequencer()
 
         async with connch, quitch:
@@ -164,9 +164,10 @@ async def test_username() -> None:
                 nursery.start_soon(client_closing_reuse, connch, seq)
 
     async def monitor(
-            connch: SendCh[trio.abc.Stream],
-            playerch: RecvCh[Player],
-            quitch: SendCh[Player]) -> None:
+        connch: SendCh[trio.abc.Stream],
+        playerch: RecvCh[Player],
+        quitch: SendCh[Player],
+    ) -> None:
 
         async with trio.open_nursery() as nursery:
             nursery.start_soon(wait_for_all_clients, connch, quitch)
@@ -175,16 +176,15 @@ async def test_username() -> None:
     with trio.move_on_after(2) as cancel_scope:
         async with trio.open_nursery() as nursery:
             nursery.start_soon(
-                initiator.initiator,
-                conn_recvch,
-                player_sendch,
-                quit_recvch
+                initiator.initiator, conn_recvch, player_sendch, quit_recvch
             )
             nursery.start_soon(monitor, conn_sendch, player_recvch, quit_sendch)
 
-    assert cancel_scope.cancelled_caught is False, \
-            "initator and/or monitor took too long to finish"
-    
+    assert (
+        cancel_scope.cancelled_caught is False
+    ), "initator and/or monitor took too long to finish"
+
+
 async def test_quitter() -> None:
     # left is a net.JSONStream, right just a trio.abc.Stream
 
@@ -199,10 +199,7 @@ async def test_quitter() -> None:
         await connch.send(right)
         assert await left.read() == {"type": "log in"}
         await left.write({"type": "log in", "username": "first"})
-        assert await left.read() == {
-            "type": "log in update",
-            "state": "accepted"
-        }
+        assert await left.read() == {"type": "log in update", "state": "accepted"}
 
         # the initiator should spit the player out
         player = await playerch.receive()
@@ -210,7 +207,7 @@ async def test_quitter() -> None:
         assert player.username == "first"
         assert player.stream == net.JSONStream(right)
 
-        # player quits from the lobby or a sub, or anything that isn't the 
+        # player quits from the lobby or a sub, or anything that isn't the
         # initiator
         await quitch.send(player)
 
@@ -218,13 +215,10 @@ async def test_quitter() -> None:
 
         await connch.send(right)
         assert await left.read() == {"type": "log in"}
-        # notice how we use the same username. It shouldn't block, because 
+        # notice how we use the same username. It shouldn't block, because
         # the other quitted
         await left.write({"type": "log in", "username": "first"})
-        assert await left.read() == {
-            "type": "log in update",
-            "state": "accepted"
-        }
+        assert await left.read() == {"type": "log in update", "state": "accepted"}
 
         player = await playerch.receive()
 
@@ -234,27 +228,15 @@ async def test_quitter() -> None:
         await conn_sendch.aclose()
         await quit_sendch.aclose()
 
-
     conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
     player_sendch, player_recvch = trio.open_memory_channel[Player](0)
     quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
 
     async with trio.open_nursery() as nursery:
         nursery.cancel_scope.deadline = trio.current_time() + 2
-        nursery.start_soon(
-            spawn,
-            conn_sendch,
-            player_recvch,
-            quit_sendch
-        )
-        nursery.start_soon(
-            initiator.initiator,
-            conn_recvch,
-            player_sendch,
-            quit_recvch
-        )
+        nursery.start_soon(spawn, conn_sendch, player_recvch, quit_sendch)
+        nursery.start_soon(initiator.initiator, conn_recvch, player_sendch, quit_recvch)
 
-
-    assert nursery.cancel_scope.cancelled_caught is False, \
-            f"spawn timed out after 2 seconds"
-    
+    assert (
+        nursery.cancel_scope.cancelled_caught is False
+    ), f"spawn timed out after 2 seconds"

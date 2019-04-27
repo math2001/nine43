@@ -17,13 +17,10 @@ from server.types import *
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
+
 def load_worlds_metadata() -> Tuple[Dict[str, str], ...]:
-    return (
-        {
-            "name": "default",
-            "description": "don't worry. be happy."
-        },
-    )
+    return ({"name": "default", "description": "don't worry. be happy."},)
+
 
 async def new_sub(group: Group) -> None:
     log.info("[sub] select")
@@ -32,7 +29,7 @@ async def new_sub(group: Group) -> None:
     except Exception as e:
         return log.exception("sub crashed: select failed")
 
-    log.info("[sub] world '%s'", chosen_world['name'])
+    log.info("[sub] world '%s'", chosen_world["name"])
     result: Result = await world.world(group, chosen_world)
 
     log.info("[sub] fin")
