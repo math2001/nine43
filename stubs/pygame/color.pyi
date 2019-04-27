@@ -1,6 +1,6 @@
 from typing import *
 
-ValidColor = Union[Tuple[int, int, int], Color]
+ValidColor = Union[Tuple[int, int, int], Color, int]
 
 class Color(object):
     r: int
