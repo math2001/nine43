@@ -8,3 +8,17 @@ What the hell:
 	    print('going to sleep')
 	    await trio.sleep(2)
 	    print('this never runs, and does not sleep')
+
+---
+
+To cancel a nursery, but check what's running just before:
+	
+	def cancel_after(nursery, timeout):
+		await trio.sleep(timeout)
+		print(nursery.child_tasks)
+		nursery.cancel_scope.cancel()
+
+	with trio.open_nursery() as nursery:
+		nursery.start_soon(task1)
+		nursery.start_soon(task2)
+		nursery.start_soon(cancel_after, nursery, 2)

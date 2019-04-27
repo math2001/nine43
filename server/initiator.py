@@ -92,7 +92,7 @@ async def initiate_conn(
             log.debug("getting valid username")
 
             username = await get_username(stream, usernameslk)
-            if not username:
+            if username is None:
                 return log.info("connection dropped")
 
             player = Player(stream, username)

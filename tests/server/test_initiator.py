@@ -13,6 +13,24 @@ def new_half_stream_pair() -> Tuple[net.JSONStream, trio.abc.Stream]:
     return client, right
 
 
+async def check_login_request(client: net.JSONStream) -> None:
+    with trio.move_on_after(2) as cancel_scope:
+        assert await client.read() == {"type": "log in"}
+
+    assert (
+        cancel_scope.cancelled_caught is False
+    ), "waiting for log in request from server took to long"
+
+
+async def got_accepted(client: net.JSONStream) -> None:
+    with trio.move_on_after(2) as cancel_scope:
+        assert await client.read() == {"type": "log in update", "state": "accepted"}
+
+    assert (
+        cancel_scope.cancelled_caught is False
+    ), "waiting for log in acception from server took to long"
+
+
 async def test_username() -> None:
 
     conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
@@ -31,22 +49,6 @@ async def test_username() -> None:
         "quitter": new_half_stream_pair(),
     }
 
-    async def got_login_request(client: net.JSONStream) -> None:
-        with trio.move_on_after(2) as cancel_scope:
-            assert await client.read() == {"type": "log in"}
-
-        assert (
-            cancel_scope.cancelled_caught is False
-        ), "waiting for log in request from server took to long"
-
-    async def got_accepted(client: net.JSONStream) -> None:
-        with trio.move_on_after(2) as cancel_scope:
-            assert await client.read() == {"type": "log in update", "state": "accepted"}
-
-        assert (
-            cancel_scope.cancelled_caught is False
-        ), "waiting for log in acception from server took to long"
-
     async def client_slow(connch: SendCh[trio.abc.Stream], seq: Seq) -> None:
 
         client, right = conns["slow"]
@@ -55,7 +57,7 @@ async def test_username() -> None:
             await connch.send(right)
 
         async with seq(6):
-            await got_login_request(client)
+            await check_login_request(client)
 
         async with seq(10):
             await client.write({"type": "log in", "username": "slow"})
@@ -66,7 +68,7 @@ async def test_username() -> None:
 
         async with seq(1):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
             await client.write({"type": "log in", "username": "quick"})
             await got_accepted(client)
 
@@ -75,7 +77,7 @@ async def test_username() -> None:
 
         async with seq(2):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
 
         async with seq(7):
             await client.write({"type": "log in", "username": "average"})
@@ -86,7 +88,7 @@ async def test_username() -> None:
 
         async with seq(11):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
             await client.write({"type": "log in", "username": "late"})
             await got_accepted(client)
 
@@ -95,7 +97,7 @@ async def test_username() -> None:
 
         async with seq(3):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
 
         async with seq(8):
             await client.write({"type": "log in", "username": "average"})
@@ -115,7 +117,7 @@ async def test_username() -> None:
 
         async with seq(5):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
 
         async with seq(13):
             await client.write({"type": "log in", "username": "closing"})
@@ -126,14 +128,14 @@ async def test_username() -> None:
 
         async with seq(4):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
             await client.aclose()
 
         client, right = conns["closing3"]
 
         async with seq(9):
             await connch.send(right)
-            await got_login_request(client)
+            await check_login_request(client)
             await client.write({"type": "log in", "username": "closing"})
             await client.aclose()
 
@@ -231,6 +233,37 @@ async def test_quitter() -> None:
     conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
     player_sendch, player_recvch = trio.open_memory_channel[Player](0)
     quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
+
+    async with trio.open_nursery() as nursery:
+        nursery.cancel_scope.deadline = trio.current_time() + 2
+        nursery.start_soon(spawn, conn_sendch, player_recvch, quit_sendch)
+        nursery.start_soon(initiator.initiator, conn_recvch, player_sendch, quit_recvch)
+
+    assert (
+        nursery.cancel_scope.cancelled_caught is False
+    ), f"spawn timed out after 2 seconds"
+
+
+async def test_empty_username() -> None:
+    conn_sendch, conn_recvch = trio.open_memory_channel[trio.abc.Stream](0)
+    player_sendch, player_recvch = trio.open_memory_channel[Player](0)
+    quit_sendch, quit_recvch = trio.open_memory_channel[Player](0)
+
+    async def spawn(
+        connch: SendCh[trio.abc.Stream],
+        playerch: RecvCh[Player],
+        quitch: SendCh[Player],
+    ) -> None:
+        left, right = new_half_stream_pair()
+        await connch.send(right)
+        await check_login_request(left)
+        await left.write({"type": "log in", "username": ""})
+        await got_accepted(left)
+
+        await playerch.receive()
+
+        await connch.aclose()
+        await quitch.aclose()
 
     async with trio.open_nursery() as nursery:
         nursery.cancel_scope.deadline = trio.current_time() + 2

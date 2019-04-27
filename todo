@@ -7,13 +7,13 @@
 - do at least some unit tests for the client
 - do something for sub scenes
 - add "report" button to errors
-- bug with empty usernames
 - move pygame stubs into their own package
 - CI notification when it fails
 - test client scenes by looking at the state
 - send information to client during the lobby
 - actions monitoring!
 
+DONE bug with empty usernames
 DONE yapf code base (git hook?) -> used black
 DONE use pdata across scenes
 DONE show error messages @ username
