@@ -12,6 +12,7 @@ _resources: Dict[str, Any] = {"images": {}, "fonts": {}}
 
 pygame.freetype.init()
 
+
 def get_image(name: str) -> pygame.Surface:
     if name in _resources["images"]:
         return _resources["images"][name]

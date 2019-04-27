@@ -12,11 +12,10 @@ Font = pygame.freetype.Font
 Event = pygame.event.EventType
 
 
-@attr.s(auto_attribs=True)
 class Screen:
-
-    surf: Any
-    rect: Any
+    def __init__(self, surf: pygame.Surface):
+        self.surf = surf
+        self.rect = surf.get_rect()
 
 
 class Scene(abc.ABC):

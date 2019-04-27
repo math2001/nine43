@@ -22,3 +22,5 @@ To cancel a nursery, but check what's running just before:
 		nursery.start_soon(task1)
 		nursery.start_soon(task2)
 		nursery.start_soon(cancel_after, nursery, 2)
+
+TO FIX: it keeps the nursery open even if all the other tasks exits

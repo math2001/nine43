@@ -16,9 +16,7 @@ def test_fontedit() -> None:
     with fontedit(get_font("FiraMono-Medium"), origin=False) as font:
         assert font.origin == False, "font attribute hasn't been set in context manager"
 
-    assert (
-        out.origin == True
-    ), "font attribute hasn't been restored properly"
+    assert out.origin == True, "font attribute hasn't been restored properly"
 
     # restore to original value because get_font() always returns the same object, so this
     # might affect other tests
