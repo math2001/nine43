@@ -11,6 +11,7 @@
 - CI notification when it fails
 - test client scenes by looking at the state
 - send information to client during the lobby
+- connect scene: show error in client when it fails, and propose to retry
 - actions monitoring!
 
 DONE bug with empty usernames
