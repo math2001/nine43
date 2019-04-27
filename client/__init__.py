@@ -17,9 +17,7 @@ MAX_FPS = 60.0
 
 
 def get_screen() -> Screen:
-    surf = pygame.display.set_mode((500, 500))
-    rect = surf.get_rect()
-    return Screen(surf, rect)
+    return Screen(pygame.display.set_mode((500, 500)))
 
 
 def show_debug(screen: Screen, scene: Scene, fps: float) -> None:
