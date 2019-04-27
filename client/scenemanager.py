@@ -48,7 +48,7 @@ async def manage_scenes(game_nursery: Nursery) -> None:
     clock = pygame.time.Clock()
 
     debug = True
-    kwargs: Dict[str, Any] = {}
+    pdata = SimpleNamespace()
 
     going = True
     while going:
@@ -59,7 +59,7 @@ async def manage_scenes(game_nursery: Nursery) -> None:
             if scene_name not in scenes:
                 raise ValueError(f"Unknown scene {scene_name!r}")
 
-            scene = scenes[scene_name](nursery, screen, **kwargs)
+            scene = scenes[scene_name](nursery, screen, pdata)
 
             while scene.going:
 
@@ -90,7 +90,8 @@ async def manage_scenes(game_nursery: Nursery) -> None:
 
             if going:
                 scene.close()
-                scene_name, kwargs = scene.next_scene()
+                pdata = scene.pdata
+                scene_name = scene.next_scene()
 
             # scene should be closed in less that 2 seconds
             nursery.cancel_scope.deadline = trio.current_time() + 2

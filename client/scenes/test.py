@@ -10,8 +10,9 @@ class Test(Scene):
 
     def __init__(self,
         nursery: Nursery,
-        screen: Screen):
-        super().__init__(nursery, screen)
+        screen: Screen,
+        pdata: SimpleNamespace):
+        super().__init__(nursery, screen, pdata)
 
         self.button = gui.Button(
             text="Show popup?",
@@ -44,8 +45,8 @@ class Test(Scene):
         self.button.rect.center = self.screen.rect.center
         # self.modal.moved()
 
-    def next_scene(self) -> Tuple[str, Dict[str, Any]]:
-        return "", {}
+    def next_scene(self) -> str:
+        return ""
 
     def finish(self) -> None:
         pass

@@ -3,6 +3,7 @@ import abc
 import pygame
 import attr
 from typings import *
+from types import SimpleNamespace
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -18,9 +19,10 @@ class Screen:
 
 class Scene(abc.ABC):
 
-    def __init__(self, nursery: Nursery, screen: Screen):
+    def __init__(self, nursery: Nursery, screen: Screen, pdata: SimpleNamespace):
         self.scene_nursery = nursery
         self.screen = screen
+        self.pdata = pdata
         self.going = True
         self._state = -1, ""
 
@@ -42,8 +44,8 @@ class Scene(abc.ABC):
         return ""
 
     @abc.abstractmethod
-    def next_scene(self) -> Tuple[str, Dict[str, Any]]:
-        return "", {}
+    def next_scene(self) -> str:
+        return ""
 
     def handle_event(self, e: pygame.event.EventType) -> bool:
         return False

@@ -59,15 +59,16 @@ class Username(Scene):
     def __init__(self,
         nursery: Nursery,
         screen: Screen,
-        stream: net.JSONStream):
-        super().__init__(nursery, screen)
+        pdata: SimpleNamespace):
+        super().__init__(nursery, screen, pdata)
 
-        self.username = ""
+        self.pdata.username = ""
         self.resp_sendch, self.resp_recvch = trio.open_memory_channel[Message](0)
         self.request_sent = trio.Event()
 
+        assert hasattr(self.pdata, 'stream')
+
         self.state = STATE_WAITING_INPUT
-        self.stream = stream
 
         self.modal = gui.Modal(
             title="Error",
@@ -91,17 +92,17 @@ class Username(Scene):
             return False
 
         if e.key == pygame.K_BACKSPACE:
-            if len(self.username) > 0:
-                self.username = self.username[:-1]
+            if len(self.pdata.username) > 0:
+                self.pdata.username = self.pdata.username[:-1]
 
         elif e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
 
-            self.scene_nursery.start_soon(submit_username, self.username,
-                                          self.stream, self.resp_sendch)
+            self.scene_nursery.start_soon(submit_username, self.pdata.username,
+                                          self.pdata.stream, self.resp_sendch)
             self.state = STATE_WAITING_SERVER
 
         elif e.unicode:
-            self.username += e.unicode
+            self.pdata.username += e.unicode
 
         else:
             return False
@@ -149,7 +150,7 @@ class Username(Scene):
         start = [self.screen.rect.centerx - 50, self.screen.rect.centery]
 
         with fontedit(MONO, origin=True) as font:
-            rect = font.render_to(self.screen.surf, start, self.username)
+            rect = font.render_to(self.screen.surf, start, self.pdata.username)
 
         if self.state == STATE_WAITING_INPUT:
             # render the cursor
@@ -165,8 +166,8 @@ class Username(Scene):
 
         self.modal.render()
 
-    def next_scene(self) -> Tuple[str, Dict[str, Any]]:
-        return 'lobby', {'stream': self.stream, 'username': self.username}
+    def next_scene(self) -> str:
+        return 'lobby'
 
     def finish(self) -> None:
-        self.scene_nursery.start_soon(self.stream.aclose)
+        self.scene_nursery.start_soon(self.pdata.stream.aclose)

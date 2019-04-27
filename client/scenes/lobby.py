@@ -10,15 +10,6 @@ log.setLevel(logging.INFO)
 
 class Lobby(Scene):
 
-    def __init__(self,
-        nursery: Nursery,
-        screen: Screen,
-        stream: net.JSONStream,
-        username: str):
-        super().__init__(nursery, screen)
-        self.stream = stream
-        self.username = username
-
     def render(self) -> None:
         with fontedit(MONO) as font:
             rect = font.get_rect(f"Waiting for other people to join the lobby")
@@ -26,13 +17,13 @@ class Lobby(Scene):
             rect.top = 100
             font.render_to(self.screen.surf, rect, None)
 
-            rect = font.get_rect(f"Hold tight {self.username}")
+            rect = font.get_rect(f"Hold tight {self.pdata.username}")
             rect.center = self.screen.rect.center
             font.render_to(self.screen.surf, rect, None)
             
 
-    def next_scene(self) -> Tuple[str, Dict[str, Any]]:
-        return 'select', {'stream': self.stream, 'username': self.username}
+    def next_scene(self) -> str:
+        return 'select'
 
     def finish(self) -> None:
-        self.scene_nursery.start_soon(self.stream.aclose)
+        self.scene_nursery.start_soon(self.pdata.stream.aclose)

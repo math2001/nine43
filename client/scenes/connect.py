@@ -48,8 +48,8 @@ class Connect(Scene):
     host = "localhost"
     port = PORT
 
-    def __init__(self, nursery: Nursery, screen: Screen):
-        super().__init__(nursery, screen)
+    def __init__(self, nursery: Nursery, screen: Screen, pdata: SimpleNamespace):
+        super().__init__(nursery, screen, pdata)
 
         stream_sendch, self.stream_recvch = trio.open_memory_channel[net.JSONStream](0)
 
@@ -65,7 +65,7 @@ class Connect(Scene):
     def update(self) -> None:
         if self.state[0] == 0:
             try:
-                self.stream = self.stream_recvch.receive_nowait()
+                self.pdata.stream = self.stream_recvch.receive_nowait()
             except trio.WouldBlock:
                 pass
             else:
@@ -73,11 +73,14 @@ class Connect(Scene):
 
         elif self.state[0] == 10:
             try:
-                self.stream = self.stream_recvch.receive_nowait()
+                msg = self.stream_recvch.receive_nowait()
             except trio.WouldBlock:
                 pass
             except trio.EndOfChannel:
                 self.going = False
+            else:
+                raise ValueError(f"streamch should have been closed, got "
+                                 f"{msg!r}")
 
     def render(self) -> None:
         with fontedit(MONO) as font:
@@ -85,10 +88,10 @@ class Connect(Scene):
             rect.center = self.screen.rect.center
             font.render_to(self.screen.surf, rect, None)
 
-    def next_scene(self) -> Tuple[str, Dict[str, Any]]:
-        return 'username', {'stream': self.stream}
+    def next_scene(self) -> str:
+        return 'username'
 
     def finish(self) -> None:
         if self.state[0] >= 10:
             # we have a stream open
-            self.scene_nursery.start_soon(self.stream.aclose)
+            self.scene_nursery.start_soon(self.pdata.stream.aclose)

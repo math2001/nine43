@@ -85,9 +85,9 @@ closed.
 
 ```python
 async def section1(ch: SendCh[Obj]):
-	obj = make_new_obj(arg='value')
-	await ch.send(obj)
-	obj.alter() # no!! You don't own obj anymore!
+    obj = make_new_obj(arg='value')
+    await ch.send(obj)
+    obj.alter() # no!! You don't own obj anymore!
 ```
 
 It prevents us from thinking of every section as independent, and we have to 
