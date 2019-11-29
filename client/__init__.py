@@ -50,6 +50,8 @@ async def scene_manager(game_nursery: Nursery) -> None:
 
     debug = True
     pdata = SimpleNamespace()
+    pdata.host = "localhost"
+    pdata.port = PORT
 
     going = True
     while going:
